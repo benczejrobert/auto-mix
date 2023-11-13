@@ -1,14 +1,54 @@
 ################ YODEL
+from typing import Any
+
 import numpy as np
-import pymixconsole as pymc
 import soundfile as sf
 import pyloudnorm as pyln
+from numpy import ndarray, dtype, floating, float_
+from numpy._typing import _64Bit
 from scipy.io import wavfile
 # https://pypi.org/project/yodel/
 # https://codeandsound.wordpress.com/2014/10/09/parametric-eq-in-python/
 # https://github.com/topics/equalizer?l=python
 from yodel import filter
 
+class signal_processor:
+
+    # TODO add
+
+    def __init__(self, rate = None):
+        if rate is None:
+            # TODO make this output current error line and also name of the instance
+            raise Exception(f"In class {type(self).__name__}, sample rate was not defined for the current instance.")
+        self.rate = rate
+        self.bi_quad = filter.Biquad()
+
+
+
+
+
+    #TODO make a function that calls process_signal multiple times by iterating a processing_variant
+    # A processing_variant is a list of [dict of {proc_type: [params]}]
+    # - this function will output the processed signal with a log of all the processing it went through
+    # the name of the signal will be like base_name_index
+
+
+    # TODO make a function that iterates a list of processing variants for a signal. - this will contain a list of processing variants
+    def single_process(self, signal, proc_type, params):
+        print(params)
+        print(*params)
+        process = getattr(self.bi_quad, proc_type) #(self.rate, params[0], params[1],2))
+
+        process(self.rate,*params)
+        output: ndarray[Any, dtype[floating[_64Bit] | float_]] = np.zeros(signal.size)
+        # self.bi_quad.process(self.bi_quad,signal, output)
+        """
+        :return:
+        """
+# print(globals().items())
+aas = signal_processor(48000)
+aas.single_process(np.ones(48000),"low_pass",[100,2])
+asdf
 path = 'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'
 
 """
