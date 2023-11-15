@@ -1,5 +1,10 @@
 from imports import *
 
+def write_metadata(file_path,tags):
+    with taglib.File(file_path, save_on_exit=True) as song:
+        print(f"For file at {file_path}, tags are:",song.tags)
+        song.tags = dict()
+        song.tags = tags
 def normalization(x):
     x_norm = x / max(np.abs(x))
 

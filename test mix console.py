@@ -1,16 +1,14 @@
-################ YODEL
-from typing import Any
 
-import numpy as np
-import soundfile as sf
-import pyloudnorm as pyln
-from numpy import ndarray, dtype, floating, float_
-from numpy._typing import _64Bit
-from scipy.io import wavfile
+from utils import *
 # https://pypi.org/project/yodel/
 # https://codeandsound.wordpress.com/2014/10/09/parametric-eq-in-python/
 # https://github.com/topics/equalizer?l=python
-from yodel import filter
+
+
+ # with save_on_exit=True, file will be saved at the end of the 'with' block
+
+write_metadata("collab.wav",{"freq":["6900"]})
+
 
 class signal_processor:
 
@@ -22,7 +20,7 @@ class signal_processor:
             raise Exception(f"In class {type(self).__name__}, sample rate was not defined for the current instance.")
         self.rate = rate
         self.bi_quad = filter.Biquad()
-
+        # self.eq = filter.
 
 
 
@@ -37,10 +35,16 @@ class signal_processor:
     def single_process(self, signal, proc_type, params):
         print(params)
         print(*params)
-        process = getattr(self.bi_quad, proc_type) #(self.rate, params[0], params[1],2))
 
-        process(self.rate,*params)
-        output: ndarray[Any, dtype[floating[_64Bit] | float_]] = np.zeros(signal.size)
+        # TODO try doing multiple processings and use a self.filters list instead.
+
+        # TODO folosesc peak
+        try:
+            process = getattr(self.bi_quad, proc_type) #(self.rate, params[0], params[1],2))
+        except:
+
+            process(self.rate,*params)
+        output: np.ndarray[Any, np.dtype[np.floating[np._typing._64Bit] | np.float_]] = np.zeros(signal.size)
         # self.bi_quad.process(self.bi_quad,signal, output)
         """
         :return:
