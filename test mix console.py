@@ -7,7 +7,7 @@ from utils import *
 
  # with save_on_exit=True, file will be saved at the end of the 'with' block
 
-write_metadata("collab.wav",{"freq":["6900"]})
+# write_metadata("collab.wav",{"freq":["6900"]})
 
 
 class signal_processor:
@@ -18,40 +18,90 @@ class signal_processor:
         if rate is None:
             # TODO make this output current error line and also name of the instance
             raise Exception(f"In class {type(self).__name__}, sample rate was not defined for the current instance.")
+        # if signal is None:
+        #     # TODO make this output current error line and also name of the instance
+        #     raise Exception(f"In class {type(self).__name__}, signal was not defined for the current instance.")
         self.rate = rate
-        self.bi_quad = filter.Biquad()
-        # self.eq = filter.
+        # self.signal = signal
+        self.reset()
 
-
-
-
-    #TODO make a function that calls process_signal multiple times by iterating a processing_variant
-    # A processing_variant is a list of [dict of {proc_type: [params]}]
-    # - this function will output the processed signal with a log of all the processing it went through
-    # the name of the signal will be like base_name_index
+    def reset(self):
+        self.filters = []
 
 
     # TODO make a function that iterates a list of processing variants for a signal. - this will contain a list of processing variants
-    def single_process(self, signal, proc_type, params):
-        print(params)
-        print(*params)
+    def _create_filter(self, proc_type, dict_params):
+        """
 
-        # TODO try doing multiple processings and use a self.filters list instead.
+        :param filter:
+        :param proc_type: one of: low_pass, high_pass, peak, low_shelf, high_shelf
+        :param dict_params: IF [proc_type] in [low_pass, high_pass] -
+                       dict like {
+                       "cutoff": [number],
+                       "resonance": [number]
+                       }
+                       With reduction of 12 dB/oct
+                       IF [proc_type] in [peak, low_shelf, high_shelf] -
+                        dict like {
+                       "cutoff": [number],
+                       "resonance": [number],
+                       "dbgain": [number]
+                       }
 
-        # TODO folosesc peak
-        try:
-            process = getattr(self.bi_quad, proc_type) #(self.rate, params[0], params[1],2))
-        except:
+        :return:
+        """
+        print(dict_params)
+        print(*dict_params)
 
-            process(self.rate,*params)
-        output: np.ndarray[Any, np.dtype[np.floating[np._typing._64Bit] | np.float_]] = np.zeros(signal.size)
-        # self.bi_quad.process(self.bi_quad,signal, output)
+        new_filter = filter.Biquad()
+        new_filter.__getattribute__(proc_type)(**{"samplerate": self.rate, **dict_params})
+        self.filters.append(new_filter)
+        del new_filter
         """
         :return:
         """
+    def _create_filters_single_proc(self, dict_procs_single_variant):
+        """
+
+        :param dict_procs_single_variant:
+
+        Example: {low_shelf: {"samplerate": 48000,"cutoff": 1000, "resonance": 2.0, "dbgain": 2.0},
+                 high_shelf: {"samplerate": 48000,"cutoff": 1000, "resonance": 2.0, "dbgain": 2.0}
+                 }
+        :return:
+        """
+        # output: np.ndarray[Any, np.dtype[np.floating[np._typing._64Bit] | np.float_]] = np.zeros(signal.size)
+        for crt_proc_type in dict_procs_single_variant.keys():
+            self._create_filter(proc_type=crt_proc_type,dict_params={"samplerate":self.rate,
+                                                                     **dict_procs_single_variant[crt_proc_type]})
+        return
+    def _process_signal_variant(self,signal,dict_procs_single_variant):
+
+        #TODO make a function that calls _process_signal_variant multiple times by iterating a dict of dicts.
+        # A processing list is a dict of { filename: {proc_type: {param_name: value} } }
+        # - this function will output the processed signal with a log of all the processing it went through
+        # the name of the signal will be like base_name_index
+        
+        self._create_filters_single_proc(dict_procs_single_variant)
+        signal_out = signal
+        for f in self.filters:
+            f.process(signal_out,signal_out)
+        self.reset() # after signal was processed, reset
+        # write signal to disk using metadata as well
+
+        # TODO add signal filename also
+        return  signal_out
+
 # print(globals().items())
-aas = signal_processor(48000)
-aas.single_process(np.ones(48000),"low_pass",[100,2])
+sr = 48000
+
+aas = signal_processor(sr)
+
+# **{"samplerate": 48000,"cutoff": 1000, "resonance": 2.0, "dbgain": 2.0}
+dict_params_test = {"low_shelf": {"cutoff": 1000, "resonance": 2.0, "dbgain": 2.0}}
+test_sig = np.ones(sr)
+test_processed_sig = aas._process_signal_variant(test_sig, dict_params_test)
+print(test_processed_sig)
 asdf
 path = 'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'
 
