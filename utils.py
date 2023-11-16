@@ -92,3 +92,16 @@ def generate_tempo(bpm, sr):
             signal[i] = 1
 
     return signal
+
+def generate_combinations(input_dict):
+    keys = input_dict.keys()
+    values = input_dict.values()
+
+    combinations = list(product(*values))
+
+    result = []
+    for combo in combinations:
+        output_dict = dict(zip(keys, combo))
+        result.append(output_dict)
+
+    return result

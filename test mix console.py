@@ -4,10 +4,8 @@ from utils import *
 # https://codeandsound.wordpress.com/2014/10/09/parametric-eq-in-python/
 # https://github.com/topics/equalizer?l=python
 
-
- # with save_on_exit=True, file will be saved at the end of the 'with' block
-
 # write_metadata("collab.wav",{"freq":["6900"]})
+
 
 
 class signal_processor:
@@ -18,30 +16,24 @@ class signal_processor:
         if rate is None:
             # TODO make this output current error line and also name of the instance
             raise Exception(f"In class {type(self).__name__}, sample rate was not defined for the current instance.")
-        # if signal is None:
-        #     # TODO make this output current error line and also name of the instance
-        #     raise Exception(f"In class {type(self).__name__}, signal was not defined for the current instance.")
         self.rate = rate
-        # self.signal = signal
         self.reset()
 
     def reset(self):
         self.filters = []
 
-
-    # TODO make a function that iterates a list of processing variants for a signal. - this will contain a list of processing variants
-    def _create_filter(self, proc_type, dict_params):
+    def _create_filter(self, filter_type_name, dict_params):
         """
 
         :param filter:
-        :param proc_type: one of: low_pass, high_pass, peak, low_shelf, high_shelf
-        :param dict_params: IF [proc_type] in [low_pass, high_pass] -
+        :param filter_type_name: one of: low_pass, high_pass, peak, low_shelf, high_shelf
+        :param dict_params: IF [filter_type_name] in [low_pass, high_pass] -
                        dict like {
                        "cutoff": [number],
                        "resonance": [number]
                        }
                        With reduction of 12 dB/oct
-                       IF [proc_type] in [peak, low_shelf, high_shelf] -
+                       IF [filter_type_name] in [peak, low_shelf, high_shelf] -
                         dict like {
                        "cutoff": [number],
                        "resonance": [number],
@@ -50,11 +42,9 @@ class signal_processor:
 
         :return:
         """
-        print(dict_params)
-        print(*dict_params)
-
+        print(filter_type_name, **dict_params)
         new_filter = filter.Biquad()
-        new_filter.__getattribute__(proc_type)(**{"samplerate": self.rate, **dict_params})
+        new_filter.__getattribute__(filter_type_name)(**{"samplerate": self.rate, **dict_params})
         self.filters.append(new_filter)
         del new_filter
         """
@@ -65,44 +55,149 @@ class signal_processor:
 
         :param dict_procs_single_variant:
 
-        Example: {low_shelf: {"samplerate": 48000,"cutoff": 1000, "resonance": 2.0, "dbgain": 2.0},
-                 high_shelf: {"samplerate": 48000,"cutoff": 1000, "resonance": 2.0, "dbgain": 2.0}
+        Example: {low_shelf: {"cutoff": 1000, "resonance": 2.0, "dbgain": 2.0},
+                 high_shelf: {"cutoff": 1000, "resonance": 2.0, "dbgain": 2.0}
                  }
         :return:
         """
-        # output: np.ndarray[Any, np.dtype[np.floating[np._typing._64Bit] | np.float_]] = np.zeros(signal.size)
-        for crt_proc_type in dict_procs_single_variant.keys():
-            self._create_filter(proc_type=crt_proc_type,dict_params={"samplerate":self.rate,
-                                                                     **dict_procs_single_variant[crt_proc_type]})
+        # output: np.ndarray[Any, np.dtype[np.floating[np._typing._64Bit] | np.float_]] = np.zeros(signal_in.size)
+        for crt_filter_type_name in dict_procs_single_variant.keys():
+            self._create_filter(filter_type_name=crt_filter_type_name,dict_params={"samplerate":self.rate,
+                                                                     **dict_procs_single_variant[crt_filter_type_name]})
         return
-    def _process_signal_variant(self,signal,dict_procs_single_variant):
+    def _process_signal_variant(self,signal_in,dict_procs_single_variant):
+
+
+        """
+        Outputs the input signal with all the processings in the dict_procs_single_variant
+        :param signal_in:
+        :param dict_procs_single_variant:
+        example:
+         {
+            "low_shelf": {"cutoff": 1000, "resonance": 2.0, "dbgain": 2.0},
+            "high_shelf": {"cutoff": 2000, "resonance": 2.0, "dbgain": 2.0}
+         }
+
+        :return:
+        """
 
         #TODO make a function that calls _process_signal_variant multiple times by iterating a dict of dicts.
-        # A processing list is a dict of { filename: {proc_type: {param_name: value} } }
+        # A processing list is a dict of { filename: {filter_type_name: {param_name: value} } }
         # - this function will output the processed signal with a log of all the processing it went through
         # the name of the signal will be like base_name_index
         
         self._create_filters_single_proc(dict_procs_single_variant)
-        signal_out = signal
+        signal_out = signal_in
         for f in self.filters:
             f.process(signal_out,signal_out)
-        self.reset() # after signal was processed, reset
-        # write signal to disk using metadata as well
-
-        # TODO add signal filename also
+        self.reset() # after signal variant was processed, reset
         return  signal_out
+    
+    def _create_proc_vars_single_filter_type_name(self, dict_param_names_and_ranges):
+        """
+        This function generates all possible combinations for a single filter type and outputs them as a list.
 
-# print(globals().items())
+        :param dict_param_names_and_ranges: {filter_param_name: range()}
+        :return: dict of all possible outputs {filter_type_name: list [all dicts in specified ranges]}
+        """
+        keys = dict_param_names_and_ranges.keys()
+        values = dict_param_names_and_ranges.values()
+
+        combinations = list(product(*values))
+
+        list_param_names_combo = []
+        for combo in combinations:
+            output_dict = dict(zip(keys, combo))
+            list_param_names_combo.append(output_dict)
+        return list_param_names_combo
+
+    def _create_proc_vars_multiple_filter_type_names(self, dict_all_filter_settings_ranges):
+        """
+
+        :param dict_all_filter_settings_ranges:
+        :return:
+        """
+        dict_unraveled_all_filter_settings = {}
+
+        for filter_type in dict_all_filter_settings_ranges:
+            out_list = self._create_proc_vars_single_filter_type_name(dict_all_filter_settings_ranges[filter_type])
+            dict_unraveled_all_filter_settings[filter_type] = out_list
+        return dict_unraveled_all_filter_settings
+
+    def _create_all_proc_vars_combinations(self,proc_vars_multiple_filter_type_names):
+
+        list_all_proc_vars_combinations = []
+
+        def backtrack(depth, input_dict):
+            keys = list(input_dict.keys())
+            result = []
+
+            def recursive_backtrack(index, current_combination):
+                if len(current_combination) == depth:
+                    result.append(current_combination.copy())
+                    return
+
+                for i in range(index, len(keys)):
+                    current_key = keys[i]
+                    for element in input_dict[current_key]:
+                        # if element not in current_combination.values(): #TODO this sometimes removes valid combinations - falsely rejects combinations that are NOT YET in the output
+                        current_combination[current_key] = element
+                        recursive_backtrack(i + 1, current_combination)
+                        del current_combination[current_key]
+
+            recursive_backtrack(0, {})
+
+            return result
+
+        in_dict_keys = list(proc_vars_multiple_filter_type_names.keys())
+        for depth in range(len(in_dict_keys)):
+            output = backtrack(depth + 1, proc_vars_multiple_filter_type_names)
+            # print("backtrack output = ", output) #TODO delme
+            list_all_proc_vars_combinations.extend(output)
+        return list_all_proc_vars_combinations
+
+    def create_end_to_end_all_proc_vars_combinations(self,dict_param_names_and_ranges):
+
+        dict_unraveled_filter_settings = self._create_proc_vars_multiple_filter_type_names(dict_param_names_and_ranges)
+        # print("unraveled dict", dict_unraveled_filter_settings)  ### TODO delme
+        list_all_process_variants = self._create_all_proc_vars_combinations(dict_unraveled_filter_settings)
+        return list_all_process_variants
+    def process_signal_all_variants(self,signal_in,dict_filenames_and_process_variants):
+
+        # TODO maybe modify to first call the create_all_proc_vars and then the backtracking idk
+        for filename in dict_filenames_and_process_variants:
+            out_sig = self._process_signal_variant(signal_in,dict_filenames_and_process_variants[filename])
+            # after signal_in was processed, reset
+            # write signal to disk using metadata as well
+
+            # TODO add signal filename also
+        pass
+
 sr = 48000
-
 aas = signal_processor(sr)
 
-# **{"samplerate": 48000,"cutoff": 1000, "resonance": 2.0, "dbgain": 2.0}
-dict_params_test = {"low_shelf": {"cutoff": 1000, "resonance": 2.0, "dbgain": 2.0}}
-test_sig = np.ones(sr)
-test_processed_sig = aas._process_signal_variant(test_sig, dict_params_test)
-print(test_processed_sig)
-asdf
+dict_process_variant_test = {
+                    "low_shelf": {"cutoff": 1000, "resonance": 2.0, "dbgain": 2.0},
+                    "high_shelf": {"cutoff": 2000, "resonance": 2.0, "dbgain": 2.0}
+                    }
+
+dict_all_filter_settings = {
+    "low_shelf": {"cutoff": range(1000, 2000, 1000), "resonance": range(2, 4), "dbgain": range(2, 3)}, # TODO here just exclude the dbgain = 0 easy.
+    "high_shelf": {"cutoff": range(1000, 1001), "resonance": range(2, 3), "dbgain": range(2, 3)}
+}
+# aas._create_all_proc_vars_combinations()
+
+out_list = aas.create_end_to_end_all_proc_vars_combinations(dict_all_filter_settings)
+
+
+# TODO backtracking function could clean_input_list() and give an error if one dict contains multiple variants.
+#  the input list should only contain SINGLE FILTERS 
+#  2) then it could give an index to all of the dicts in the cleaned_input_list 
+#  3) backtracking on said indices
+#  4) output a dict of {filename_index (or index_comb): process_variant_dict}
+
+
+
 path = 'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'
 
 """
@@ -160,12 +255,6 @@ path = 'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'
             // WHAT FORMAT WOULD IT BE BEST? - structured data with a fixed set of columns.  
 
 """
-
-
-bell_band = filter.Biquad()
-# bell_band.peak(samplerate=rate,center=1000,resonance=10,dbgain=-48)
-gain = -48
-bell_band.low_shelf(samplerate=None,cutoff=1000,resonance=10,dbgain=gain)
 
 
 # save out the processed audio
