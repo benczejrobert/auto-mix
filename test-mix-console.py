@@ -3,8 +3,14 @@ from utils import *
 # https://pypi.org/project/yodel/
 # https://codeandsound.wordpress.com/2014/10/09/parametric-eq-in-python/
 # https://github.com/topics/equalizer?l=python
+# testdic = { 'collab.wav':
+#                                             {'low_shelf': {'cutoff': 1000, 'resonance': 2, 'dbgain': 2},
+#                                             'high_shelf': {'cutoff': 1000, 'resonance': 2, 'dbgain': 2}},
+#                                        'collab2.wav':
+#                                           {'low_shelf': {'cutoff': 1000, 'resonance': 3, 'dbgain': 2},
+#                                           'high_shelf': {'cutoff': 1000, 'resonance': 2, 'dbgain': 2}}}
 
-# write_metadata("collab.wav",{"freq":["6900"]})
+
 
 
 
@@ -42,7 +48,7 @@ class signal_processor:
 
         :return:
         """
-        print(filter_type_name, **dict_params)
+        print(filter_type_name, *dict_params)
         new_filter = filter.Biquad()
         new_filter.__getattribute__(filter_type_name)(**{"samplerate": self.rate, **dict_params})
         self.filters.append(new_filter)
@@ -62,7 +68,10 @@ class signal_processor:
         """
         # output: np.ndarray[Any, np.dtype[np.floating[np._typing._64Bit] | np.float_]] = np.zeros(signal_in.size)
         for crt_filter_type_name in dict_procs_single_variant.keys():
-            self._create_filter(filter_type_name=crt_filter_type_name,dict_params={"samplerate":self.rate,
+            cftn = crt_filter_type_name
+            if cftn[-1] in '1234567890':
+                cftn = cftn[:-1]
+            self._create_filter(filter_type_name=cftn,dict_params={"samplerate":self.rate,
                                                                      **dict_procs_single_variant[crt_filter_type_name]})
         return
     def _process_signal_variant(self,signal_in,dict_procs_single_variant):
@@ -124,7 +133,7 @@ class signal_processor:
             dict_unraveled_all_filter_settings[filter_type] = out_list
         return dict_unraveled_all_filter_settings
 
-    def _create_all_proc_vars_combinations(self,proc_vars_multiple_filter_type_names):
+    def _create_all_proc_vars_combinations(self,proc_vars_multiple_filter_type_names, root_filename, start_index = 0, end_index = None):
 
         list_all_proc_vars_combinations = []
 
@@ -154,41 +163,61 @@ class signal_processor:
             output = backtrack(depth + 1, proc_vars_multiple_filter_type_names)
             # print("backtrack output = ", output) #TODO delme
             list_all_proc_vars_combinations.extend(output)
-        return list_all_proc_vars_combinations
 
-    def create_end_to_end_all_proc_vars_combinations(self,dict_param_names_and_ranges):
+        # TODO add filename and index to the dict
+        # TODO add current index to the filename in dict
+        dict_all_proc_vars_combinations = {}
+        if end_index is None:
+            end_index = start_index + len(list_all_proc_vars_combinations)
+        for i in range(start_index, end_index):
+            dict_all_proc_vars_combinations[f"{root_filename}_{start_index+i}.wav"] = list_all_proc_vars_combinations[i-start_index]
+        return dict_all_proc_vars_combinations
+
+    def create_end_to_end_all_proc_vars_combinations(self,dict_param_names_and_ranges, root_filename = "eq-ed", start_index = 0, end_index = None):
 
         dict_unraveled_filter_settings = self._create_proc_vars_multiple_filter_type_names(dict_param_names_and_ranges)
-        # print("unraveled dict", dict_unraveled_filter_settings)  ### TODO delme
-        list_all_process_variants = self._create_all_proc_vars_combinations(dict_unraveled_filter_settings)
-        return list_all_process_variants
+        dict_filenames_and_process_variants = self._create_all_proc_vars_combinations(dict_unraveled_filter_settings, root_filename, start_index, end_index)
+        return dict_filenames_and_process_variants
     def process_signal_all_variants(self,signal_in,dict_filenames_and_process_variants):
+
 
         # TODO maybe modify to first call the create_all_proc_vars and then the backtracking idk
         for filename in dict_filenames_and_process_variants:
             out_sig = self._process_signal_variant(signal_in,dict_filenames_and_process_variants[filename])
-            # after signal_in was processed, reset
-            # write signal to disk using metadata as well
+            # TODO write signal to disk using filename
+            sf.write(filename, out_sig, self.rate)
 
-            # TODO add signal filename also
-        pass
+            reset = True
+            for filter_type in dict_filenames_and_process_variants[filename]:
+                # TODO write signal to disk using metadata as well
+                write_metadata(filename, filter_type, str(dict_filenames_and_process_variants[filename][filter_type]),
+                               reset, False, True)
+                reset = False
+                pass
 
-sr = 48000
+
+
+
+
+signal_in, sr = sf.read('D:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav')
 aas = signal_processor(sr)
 
-dict_process_variant_test = {
-                    "low_shelf": {"cutoff": 1000, "resonance": 2.0, "dbgain": 2.0},
-                    "high_shelf": {"cutoff": 2000, "resonance": 2.0, "dbgain": 2.0}
-                    }
+# dict_process_variant_test = {
+#                     "low_shelf": {"cutoff": 1000, "resonance": 2.0, "dbgain": 2.0},
+#                     "high_shelf": {"cutoff": 2000, "resonance": 2.0, "dbgain": 2.0}
+#                     }
+# cutoff e center la peak
 
+# TODO you need to add numbers at the end of every signal processing type, because you can have multiple of the same type
+#  like peak1, peak2, peak3 etc - always name them with numbers at the end
 dict_all_filter_settings = {
-    "low_shelf": {"cutoff": range(1000, 2000, 1000), "resonance": range(2, 4), "dbgain": range(2, 3)}, # TODO here just exclude the dbgain = 0 easy.
-    "high_shelf": {"cutoff": range(1000, 1001), "resonance": range(2, 3), "dbgain": range(2, 3)}
+    "peak1": {"center": range(1000, 2000, 1000), "resonance": range(2, 3), "dbgain": range(0,24,3)}, # TODO here just exclude the dbgain = 0 easy.
+    "peak2": {"center": range(8000, 8001), "resonance": range(2, 3), "dbgain": range(12, 13)} # TODO problem coz a dict cant have twice the same key AAAAAAAAAAAAAA
 }
 # aas._create_all_proc_vars_combinations()
 
-out_list = aas.create_end_to_end_all_proc_vars_combinations(dict_all_filter_settings)
-
+dict_filenames_and_process_variants = aas.create_end_to_end_all_proc_vars_combinations(dict_all_filter_settings, root_filename="eq_ed", start_index=4, end_index=None)
+aas.process_signal_all_variants(signal_in,dict_filenames_and_process_variants)
 
 # TODO backtracking function could clean_input_list() and give an error if one dict contains multiple variants.
 #  the input list should only contain SINGLE FILTERS 

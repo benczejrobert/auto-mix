@@ -1,10 +1,21 @@
 from imports import *
 
-def write_metadata(file_path,tags):
+def write_metadata(file_path,tag,tagval, reset_tags = False, verbose_start = False, verbose_final = False):
     with taglib.File(file_path, save_on_exit=True) as song:
-        print(f"For file at {file_path}, tags are:",song.tags)
-        song.tags = dict()
-        song.tags = tags
+        if verbose_start:
+            print(f"For file at {file_path}, starting tags are:",song.tags)
+        if reset_tags:
+            song.tags = dict() # reset tags
+        song.tags[tag] = [tagval] # set new tags
+        if verbose_final:
+            print(f"For file at {file_path}, final tags are:", song.tags)
+
+def read_metadata(file_path, verbose = False):
+    with taglib.File(file_path) as song:
+        if verbose:
+            print(f"For file at {file_path}, tags are:", song.tags)
+        return song.tags
+
 def normalization(x):
     x_norm = x / max(np.abs(x))
 
