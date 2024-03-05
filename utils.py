@@ -1,5 +1,51 @@
 from imports import *
 
+def mixtgauss(N, p, sigma0, sigma1):
+    '''
+    WARNING: this function is not normalized
+
+    gives a mixtuare of gaussian noise
+    arguments:
+    N: data length
+    p: probability of peaks
+    sigma0: standard deviation of backgrond noise
+    sigma1: standard deviation of impulse noise
+
+    output: x: unnormalized output noise
+
+    '''
+    q = np.random.randn(N,1)
+    u = q<p
+    x = (sigma0 * (1 - u) + sigma1 * u) * np.random.randn(N, 1)
+
+    # TODO lookup is the gaussian mixture actually the sum of PDFs/PMFs or is it the sum of the random variables?
+
+    # TODO are synthetic signals are created from the PDFs/PMFs, not from the random variables?
+
+    # if I want to model a signal/(de)compose it based on PDF/PMFs, should I also add a time shift parameter?
+
+    return x
+
+# write a function that displays a signal with matplotlib
+def plot_signal(signal, rate, title = 'Signal', xlabel = 'Time (s)', ylabel = 'Amplitude'):
+    time = np.arange(0, len(signal)) / rate
+    plt.plot(time, signal)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.show()
+
+# plot fft of a signal
+def plot_fft(signal, rate, title = 'FFT', xlabel = 'Frequency (Hz)', ylabel = 'Amplitude'):
+    fft = np.fft.fft(signal)
+    magnitude = np.abs(fft)
+    frequency = np.linspace(0, rate, len(magnitude))
+    plt.plot(frequency, magnitude)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.show()
+
 def write_metadata(file_path,tag,tagval, reset_tags = False, verbose_start = False, verbose_final = False):
     with taglib.File(file_path, save_on_exit=True) as song:
         if verbose_start:
@@ -21,6 +67,26 @@ def normalization(x):
 
     return x_norm  # norm [-1,1]
 
+# todo get no_windows based on sig_len and overlap
+# find how many windows would fit in a thread on sig_len and a given no_threads
+# find no_samples per thread (based on no_windows_per_thread and overlap) and give each thread the start and end
+
+# example -> [1,2,3,4,5,6,7,8,9,10] with 3 threads and 66% overlap window length 3
+
+# 8 windows to 3 threads. 8/3 = 2.66 -> 3 windows per thread.
+# overlap = 66% -> 3*0.66 = 2 overlapping samples per window -> 3-2 = 1 non-overlapping sample per window
+# 3 windows per thread with 1 non overlapping sample -> one thread has win_len + non_ov_samples * (no_windows_per_thread - 1) samples
+
+# 1,2,3 # thread 1
+# 2,3,4 # thread 1
+# 3,4,5 # thread 1
+
+# 4,5,6 # thread 2
+# 5,6,7 # thread 2
+# 6,7,8 # thread 2
+
+# 7,8,9 # thread 3
+# 8,9,10 # thread 3
 
 def sigwin(x, l, w_type = 'rect', overlap = 0):
     """
