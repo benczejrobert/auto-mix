@@ -87,7 +87,7 @@ class SignalProcessor:
                     for element in input_dict[current_key]:
                         # if element not in current_combination.values():
                         # TODO this sometimes removes valid combinations - falsely rejects combinations
-                        #  that are NOT YET in the output
+                        #  that are NOT YET in the output - IDK if this todo was done or what it was about
                         current_combination[current_key] = element
                         recursive_backtrack(j + 1, current_combination)
                         del current_combination[current_key]
@@ -214,6 +214,7 @@ class SignalProcessor:
         # the name of the signal will be like base_name_index
 
         # TODO maybe modify to first call the create_all_proc_vars and then the backtracking idk
+        #  IDK if this todo was done or what it was about
         for filename in asv_dict_filenames_and_process_variants:
             # out_sig = signal_in.copy() #added
             # for filter_type in dict_filenames_and_process_variants[filename]: # added
@@ -249,7 +250,6 @@ dict_all_filter_settings = {
     "low_shelf": {"cutoff": range(1000, 1001, 1000), "resonance": range(2, 3), "dbgain": list(range(0, 25, 12))[1::]},
     "peak1": {"center": range(8000, 12001, 1000), "resonance": range(2, 3), "dbgain": list(range(0, 25, 12))[1::]},
     "peak2": {"center": range(100, 101), "resonance": range(2, 3), "dbgain": [-40]},
-    # TODO also put negative 24 at high freq see how it goes
     "low_pass": {"cutoff": range(1000, 1001, 1000), "resonance": range(2, 3)},
     "high_shelf": {"cutoff": [1000], "resonance": [2], "dbgain": [2]}
 }
@@ -271,16 +271,12 @@ for d in dict_filenames_and_process_variants:
 # test_fname = 'eq_ed_9.wav' # 12 kHz
 # test_fname = 'eq_ed_10.wav' # 100 Hz
 # test_fname = 'eq_ed_10.wav'
-test_fname = 'eq_ed_20.wav'  # todo normalize before outputting
+test_fname = 'eq_ed_20.wav'
 asdf
 aas.process_signal_all_variants(signal_in, {test_fname: dict_filenames_and_process_variants[test_fname]})
 print(aas.filters)
 
-# TODO backtracking function could clean_input_list() and give an error if one dict contains multiple variants.
-#  the input list should only contain SINGLE FILTERS 
-#  2) then it could give an index to all of the dicts in the cleaned_input_list 
-#  3) backtracking on said indices
-#  4) output a dict of {filename_index (or index_comb): process_variant_dict}
+
 
 
 path = r'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'
@@ -291,7 +287,8 @@ path = r'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'
     Parameters:
         + input signal path
         // sample rate is extracted from the signal
-        list of dict like - {param_name: list - [Param start, Param stop, Params increment, Params increment scale (log or linear)] }
+        list of dict like -
+         {param_name: list - [Param start, Param stop, Params increment, Params increment scale (log or linear)] }
         ^ this dict is the base, for a single processing. 
         // TODO see how to make multiple processing, like combine 2 dicts. 
         - solution: have multiple param names in a list. 
