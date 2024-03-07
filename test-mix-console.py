@@ -207,6 +207,7 @@ class SignalProcessor:
         return signal_out
 
     def process_signal_all_variants(self, asv_signal_in, asv_dict_filenames_and_process_variants, normalize=True):
+        # TODO add an output folder in the self class init and save the files there
 
         # this function that calls _process_signal_variant multiple times by iterating a dict of dicts.
         # A processing list is a dict of { filename: {filter_type_name: {param_name: value} } }
@@ -241,9 +242,8 @@ class SignalProcessor:
 # signal_in, sr = sf.read(r'D:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise-mono.wav')
 
 signal_in, sr = librosa.load(r'D:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise-mono.wav', sr=None)
-print("sr =", sr) # TODO put this in the class?
+print("sr =", sr) # TODO put this resampler in the class init and also add sr (if resample), add file path etc?
 
-asdf
 aas = SignalProcessor(sr)
 
 # Usage tips: You need to add numbers at the end of every signal processing type, because
@@ -251,12 +251,12 @@ aas = SignalProcessor(sr)
 
 # Usage tips: include dbgain 0 if you want to ignore a certain type of filter OR remove it from the below dict.
 dict_all_filter_settings = {
-    "high_pass": {"cutoff": range(1000, 1001, 1000), "resonance": range(2, 3)},
-    "low_shelf": {"cutoff": range(1000, 1001, 1000), "resonance": range(2, 3), "dbgain": list(range(0, 25, 12))[1::]},
-    "peak1": {"center": range(8000, 12001, 1000), "resonance": range(2, 3), "dbgain": list(range(0, 25, 12))[1::]},
-    "peak2": {"center": range(100, 101), "resonance": range(2, 3), "dbgain": [-40]},
-    "low_pass": {"cutoff": range(1000, 1001, 1000), "resonance": range(2, 3)},
-    "high_shelf": {"cutoff": [1000], "resonance": [2], "dbgain": [2]}
+    "high_pass": {"cutoff": range(100, 101, 1000), "resonance": range(2, 3)},
+    "low_shelf": {"cutoff": range(200, 201, 1000), "resonance": range(2, 3), "dbgain": list(range(-12, 13, 12))},
+    "peak1": {"center": range(8000, 12001, 1000), "resonance": range(2, 3), "dbgain": list(range(-12, 13, 12))},
+    "peak2": {"center": range(1000, 1001), "resonance": range(2, 3), "dbgain": [-40]},
+    "low_pass": {"cutoff": range(10000, 10001, 1000), "resonance": range(2, 3)},
+    "high_shelf": {"cutoff": [9000], "resonance": [2], "dbgain": [6]}
 }
 # Change this to the number of filters you want to use or None
 # to use all possible combinations of filters, any number of filters.
@@ -268,7 +268,7 @@ dict_filenames_and_process_variants = aas.create_end_to_end_all_proc_vars_combin
                                                                                        start_index=0, end_index=None,
                                                                                        number_of_filters=no_filters)
 for d in dict_filenames_and_process_variants:
-    print(d)
+    print(d,'---')
     print(dict_filenames_and_process_variants[d])
 # asdf
 
@@ -276,10 +276,11 @@ for d in dict_filenames_and_process_variants:
 # test_fname = 'eq_ed_9.wav' # 12 kHz
 # test_fname = 'eq_ed_10.wav' # 100 Hz
 # test_fname = 'eq_ed_10.wav'
-test_fname = 'eq_ed_20.wav'
-asdf
-aas.process_signal_all_variants(signal_in, {test_fname: dict_filenames_and_process_variants[test_fname]})
+# test_fname = 'eq_ed_20.wav'
+aas.process_signal_all_variants(signal_in, dict_filenames_and_process_variants)
+# aas.process_signal_all_variants(signal_in, {test_fname: dict_filenames_and_process_variants[test_fname]})
 print(aas.filters)
+asdf
 
 
 
