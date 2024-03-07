@@ -15,7 +15,7 @@ import datetime
 # from tensorflow.keras.utils import to_categorical # FIXME
 # from sklearn.model_selection import train_test_split # FIXME
 import random
-# import librosa
+import librosa
 import scipy.stats
 # from sklearn.preprocessing import StandardScaler # FIXME
 # from sklearn.utils import shuffle # FIXME

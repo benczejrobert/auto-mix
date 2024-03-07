@@ -235,10 +235,15 @@ class SignalProcessor:
 
 # contact@romainclement.com
 # signal_in, sr = sf.read(r'D:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav')
-signal_in, sr = sf.read(r'D:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise-mono.wav')
+
 # signal_in, sr = sf.read('eq_ed_20.wav')
 # signal_in, sr = sf.read('c_eq_ed_10-20.wav')
+# signal_in, sr = sf.read(r'D:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise-mono.wav')
 
+signal_in, sr = librosa.load(r'D:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise-mono.wav', sr=None)
+print("sr =", sr) # TODO put this in the class?
+
+asdf
 aas = SignalProcessor(sr)
 
 # Usage tips: You need to add numbers at the end of every signal processing type, because
