@@ -45,23 +45,6 @@ def plot_fft(signal, rate, title = 'FFT', xlabel = 'Frequency (Hz)', ylabel = 'A
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.show()
-
-def write_metadata(file_path,tag,tagval, reset_tags = False, verbose_start = False, verbose_final = False):
-    with taglib.File(file_path, save_on_exit=True) as song:
-        if verbose_start:
-            print(f"For file at {file_path}, starting tags are:",song.tags)
-        if reset_tags:
-            song.tags = dict() # reset tags
-        song.tags[tag] = [tagval] # set new tags
-        if verbose_final:
-            print(f"For file at {file_path}, final tags are:", song.tags)
-
-def read_metadata(file_path, verbose = False):
-    with taglib.File(file_path) as song:
-        if verbose:
-            print(f"For file at {file_path}, tags are:", song.tags)
-        return song.tags
-
 def normalization(x):
     x_norm = x / max(np.abs(x))
 
@@ -125,8 +108,6 @@ def sigwin(x, l, w_type = 'rect', overlap = 0):
                 w.append(np.multiply(win,x[i:i+l]))
 
     return np.array(w)
-
-
 
 def to_db(absolute,ref=1,power=False):
     return (10*(not power) + 10)*np.log10(np.abs(absolute)/ref)
