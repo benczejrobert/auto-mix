@@ -278,19 +278,17 @@ class SignalProcessor:
         :return:
         """
 
-        # TODO test me
-
         dict_out = {}
         for k in dict_in:
             dict_out[k.lower()] = dict_in[k]
         crt_no = 0
         no_digits = np.log10(len(dict_in)) + 1
         for dk in dict_in:
-            print(f"{crt_no + 1}_{dk}".format(no_digits))
-            dict_out[f"{crt_no + 1}_{dk}".format(no_digits)] = dict_in[dk]
-            crt_no += 1
-            if dict_out[dk]:
+            if dk in dict_out.keys():
                 dict_out.pop(dk)
+            print(f"{crt_no + 1}_{dk}".zfill(len(dk)+1+int(no_digits)))
+            dict_out[f"{crt_no + 1}_{dk}".zfill(len(dk)+1+int(no_digits))] = dict_in[dk]
+            crt_no += 1
         return dict_out
 
     ###############################>> create_end_to_end_all_proc_vars_combinations <<##################################
@@ -477,9 +475,9 @@ class SignalProcessor:
         :return:
         """
         self._check_dict_param_names_and_ranges(dict_param_names_and_ranges)
-        print("line 472 dict_param_names_and_ranges = ", dict_param_names_and_ranges)
+        print(f"{debugger_details()} dict_param_names_and_ranges = ", dict_param_names_and_ranges)
         dict_param_names_and_ranges = self._number_filter_bands(dict_param_names_and_ranges)
-        print("line 474 dict_param_names_and_ranges = ", dict_param_names_and_ranges)
+        print(f"{debugger_details()} dict_param_names_and_ranges = ", dict_param_names_and_ranges)
         if len(dict_param_names_and_ranges) == number_of_filters:  # TODO test this if
             if self.rate < sr_threshold:  # todo test this
                 print(f"Sample rate is below {sr_threshold} Hz, so high shelf and low pass filters will not be used.")
@@ -551,7 +549,7 @@ class SignalProcessor:
             if file.endswith(".wav"):
                 file_path = os.path.join(training_data_folder, file)
                 metadata = self.read_metadata(file_path)
-                print("--- metadata for file ", file, " ---")
+                print(f"--- {debugger_details()} metadata for sound file ", file, " ---")
                 print("\t", metadata)
                 # normalize metadata
                 list_normed_params = (self._normalize_params(metadata))
