@@ -286,7 +286,7 @@ class SignalProcessor:
         for dk in dict_in:
             if dk in dict_out.keys():
                 dict_out.pop(dk)
-            print(f"{crt_no + 1}_{dk}".zfill(len(dk)+1+int(no_digits)))
+            # print(f"{crt_no + 1}_{dk}".zfill(len(dk)+1+int(no_digits)))
             dict_out[f"{crt_no + 1}_{dk}".zfill(len(dk)+1+int(no_digits))] = dict_in[dk]
             crt_no += 1
         return dict_out
