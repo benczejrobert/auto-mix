@@ -270,9 +270,56 @@ class SignalProcessor:
                     if param_range[0] < self.dbgain_min or param_range[-1] > self.dbgain_max:
                         raise Exception(f"param_range for {param_name} is not in the range [-40, 40]: {param_range}."
                                         f" dict is", dict_param_names_and_ranges)
+
+    def _number_filter_bands(self, dict_in):  # for create_end_to_end_all_proc_vars_combinations()
+        """
+        This function numbers the frequency bands in the input dictionary, so they remain ordered in the metadata.
+        :param dict_in:
+        :return:
+        """
+
+        # TODO test me
+
+        dict_out = {}
+        for k in dict_in:
+            dict_out[k.lower()] = dict_in[k]
+        crt_no = 0
+        no_digits = np.log10(len(dict_in)) + 1
+        for dk in dict_in:
+            print(f"{crt_no + 1}_{dk}".format(no_digits))
+            dict_out[f"{crt_no + 1}_{dk}".format(no_digits)] = dict_in[dk]
+            crt_no += 1
+            if dict_out[dk]:
+                dict_out.pop(dk)
+        return dict_out
+
     ###############################>> create_end_to_end_all_proc_vars_combinations <<##################################
 
     ######################################>> process_signal_all_variants <<############################################
+
+    def _remove_numbers_from_proc_var(self, dict_in):  # for process_signal_all_variants() and load_data_for_training()
+        # TODO testme
+        """
+        This function removes the numbers from the filter band names.
+        :param dict_in:
+        :return:
+        """
+        dict_out = {}
+        for k in dict_in:
+            dict_out[re.sub("[1-9]+", "", k)[1::]] = dict_in[k]
+        return dict_out
+
+    def _lowercase_filter_bands(self, dict_in):  # for process_signal_all_variants() and load_data_for_training()
+        """
+        This function transforms the metadata to lowercase.
+        :param dict_in:
+        :return:
+        """
+        dict_out = {}
+        for k in dict_in:
+            dict_out[k.lower()] = dict_in[k]
+        return dict_out
+
     def _create_filter(self, filter_type_name, dict_params):
         """
         This function creates a filter of the specified type and with the specified parameters.
@@ -311,6 +358,9 @@ class SignalProcessor:
         :return:
         """
         # output: np.ndarray[Any, np.dtype[np.floating[np._typing._64Bit] | np.float_]] = np.zeros(signal_in.size)
+        dict_procs_single_variant = self._lowercase_filter_bands(dict_procs_single_variant)  # TODO testme
+        dict_procs_single_variant = self._remove_numbers_from_proc_var(dict_procs_single_variant)  # todo testme
+        print('363 line',dict_procs_single_variant)
         for crt_filter_type_name in dict_procs_single_variant.keys():
             cftn = crt_filter_type_name
             if cftn[-1] in '1234567890':
@@ -375,7 +425,7 @@ class SignalProcessor:
                      p1_center, p1_resonance, p1_dbgain, p2_center, p2_resonance, p2_dbgain,
                       hs_cutoff, hs_resonance, hs_dbgain - 16 params, 16 output neurons OR without HS and LP - 11 params
         """
-
+        normalized_param = None
         list_out_params = []
         for filter_type in dict_params:
             param_dict = eval(dict_params[filter_type][0])
@@ -397,7 +447,8 @@ class SignalProcessor:
         # normalized_param = (param_dict[param_name] - self.dbgain_min) / (self.dbgain_max - self.dbgain_min) * 2 - 1
         # # normalize -1, 1 max abs
         # normalized_param = param_dict[param_name] / max(np.abs([self.dbgain_min, self.dbgain_max]))
-                list_out_params.append(normalized_param)
+                if normalized_param:
+                    list_out_params.append(normalized_param)
         return list_out_params
     #########################################>> load_data_for_training <<##############################################
 
@@ -408,6 +459,7 @@ class SignalProcessor:
         This function creates all possible combinations of filter settings and outputs them as a dict of filenames.
 
 
+        :rtype: dict
         :param dict_param_names_and_ranges: dict of all possible filter settings - values
         example: {
           "high_pass": {"cutoff": range(100, 101, 1000), "resonance": range(2, 3)},
@@ -425,6 +477,9 @@ class SignalProcessor:
         :return:
         """
         self._check_dict_param_names_and_ranges(dict_param_names_and_ranges)
+        print("line 472 dict_param_names_and_ranges = ", dict_param_names_and_ranges)
+        dict_param_names_and_ranges = self._number_filter_bands(dict_param_names_and_ranges)
+        print("line 474 dict_param_names_and_ranges = ", dict_param_names_and_ranges)
         if len(dict_param_names_and_ranges) == number_of_filters:  # TODO test this if
             if self.rate < sr_threshold:  # todo test this
                 print(f"Sample rate is below {sr_threshold} Hz, so high shelf and low pass filters will not be used.")
@@ -466,7 +521,7 @@ class SignalProcessor:
         for str_file_pre_extension in asv_dict_filenames_and_process_variants:
             # last e - unprocessed input signal name
             str_unproc_sig_name = self.in_signal_path.split("/")[-1].split(".")[0]
-            sig_ext = str_unproc_sig_name.split(".")[-1] # last e - signal extension
+            sig_ext = str_unproc_sig_name.split(".")[-1]  # last e - signal extension
             crt_file_path = r"/".join([self.out_signals_root_folder,
                                        "_".join([str_unproc_sig_name,
                                                 str_file_pre_extension+"."+sig_ext])])
@@ -497,14 +552,14 @@ class SignalProcessor:
                 file_path = os.path.join(training_data_folder, file)
                 metadata = self.read_metadata(file_path)
                 print("--- metadata for file ", file, " ---")
-                print("\t",metadata)
+                print("\t", metadata)
                 # normalize metadata
                 list_normed_params = (self._normalize_params(metadata))
                 # it will be like a matrix of params. each row is the list of params for a signal (Y labels)
                 list_all_metadata.append(list_normed_params)
 
+        return list_all_metadata  # TODO testme
 
-        return list_all_metadata # TODO testme
 
 sig_path = r'D:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise-mono.wav'
 aas = SignalProcessor(sig_path, resample_to=None)
@@ -535,11 +590,8 @@ for d in dict_filenames_and_process_variants:
     print(set(dict_filenames_and_process_variants[d].keys()))
     print(len(set(dict_filenames_and_process_variants[d].keys())))
     print(dict_filenames_and_process_variants[d])
-
+asdf
 # aas.process_signal_all_variants(dict_filenames_and_process_variants)
 # aas.process_signal_all_variants(signal_in, {test_fname: dict_filenames_and_process_variants[test_fname]})
 training_data = aas.load_data_for_training("../processed-audio-latest")
-
-
 # path = r'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'
-

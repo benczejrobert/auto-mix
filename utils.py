@@ -1,5 +1,14 @@
 from imports import *
 
+def debugger_details():
+    """
+    Returns the file, function and line number of the caller.
+    Usage: print(f"{debugger_details()} variables/text you want to print")
+    :return:
+    """
+    cf = currentframe()
+    return f"""In file {os.path.split(cf.f_back.f_code.co_filename)[-1]},function {cf.f_back.f_code.co_name}(), line {cf.f_back.f_lineno}:"""
+
 def mixtgauss(N, p, sigma0, sigma1):
     '''
     WARNING: this function is not normalized
