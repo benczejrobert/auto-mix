@@ -274,6 +274,7 @@ class SignalProcessor:
     def _number_filter_bands(self, dict_in):  # for create_end_to_end_all_proc_vars_combinations()
         """
         This function numbers the frequency bands in the input dictionary, so they remain ordered in the metadata.
+        :type dict_in: dict
         :param dict_in:
         :return:
         """
@@ -284,11 +285,11 @@ class SignalProcessor:
         crt_no = 0
         no_digits = np.log10(len(dict_in)) + 1
         for dk in dict_in:
-            if dk in dict_out.keys():
-                dict_out.pop(dk)
             # print(f"{crt_no + 1}_{dk}".zfill(len(dk)+1+int(no_digits)))
             dict_out[f"{crt_no + 1}_{dk}".zfill(len(dk)+1+int(no_digits))] = dict_in[dk]
             crt_no += 1
+            if dk in dict_out.keys():
+                dict_out.pop(dk)
         return dict_out
 
     ###############################>> create_end_to_end_all_proc_vars_combinations <<##################################
