@@ -5,8 +5,6 @@ from utils import *
 # https://codeandsound.wordpress.com/2014/10/09/parametric-eq-in-python/
 # https://github.com/topics/equalizer?l=python
 
-# TODO maybe put sound file into self, as well as the data loader
-
 # TODO make another class for the feature extraction because such a class wouldn't necessarily be project specific HERE
 
 # input_sig <-> output&metadata
@@ -16,10 +14,8 @@ class SignalProcessor:
     """
         This class is used to process signals with various filters and save the processed signals with metadata.
     """
-    def __init__(self, in_signal_path, out_signals_root_folder=r"../processed-audio-latest", resample_to=None):
 
-        # TODO in_signal_path and out_signals_root_folder should be
-        #  declared somewhere globally like in a class of some sort.
+    def __init__(self, in_signal_path, out_signals_root_folder=r"../processed-audio-latest", resample_to=None):
 
         """
         This function creates a SignalProcessor class instance for a single signal.
@@ -29,10 +25,12 @@ class SignalProcessor:
         @BR20240309 Added the rate parameter and self signal to the class.
         @BR20240313 Added the out_signals_root_folder parameter to the class.
         """
-        # TODO maybe also add an output name for the signal idk - like use os.path.split(signal_path)[-1] and
-        #  add something b4 the extension
 
-        # TODO maybe modify these values
+        # TODO ask Moro for these values & modify them
+        #  These values should be declared somewhere globally like in a class of some sort.
+
+        # TODO in_signal_path and out_signals_root_folder should be
+        #  declared somewhere globally like in a class of some sort.
         # normalization values
         self.dbgain_min = -40
         self.dbgain_max = 40
@@ -55,9 +53,10 @@ class SignalProcessor:
             os.mkdir(self.out_signals_root_folder)
         if self.rate is None:
             # TODO make this output current error line and also name of the instance
-            raise Exception(f"In class {type(self).__name__}, sample rate was not defined for the current instance.")
+            #     maybe also line where the class instance is in the code
+            raise Exception(f"{debugger_details()} In class {type(self).__name__}, "
+                            f"sample rate was not defined for the current instance.")
         # self.rate = rate # left commented maybe for future use
-
 
     @staticmethod
     def write_metadata(file_path, tag, tagval, reset_tags=False, verbose_start=False, verbose_final=False):
@@ -71,10 +70,14 @@ class SignalProcessor:
         :param verbose_final:
         :return:
 
-        # TODO This function gives the correctly ordered metadata to the file, with the metadata names in lowercase BUT
+        @BR20240311 This function gives the correctly ordered metadata to the file, with
+           the metadata names in lowercase BUT
            the metadata library writes the metadata names in uppercase AND alphabetic order.
            This behavior can be seen when reading the metadata from the file
            (either with verbose_start, verbose_final or with read_metadata() function).
+
+       @BR20240316 This behavior was fixed using the _number_filter_bands() function and _lowercase_filter_bands().
+           This fix will not be applied to the verbose_start and verbose_final sections in this function.
         """
 
         with taglib.File(file_path, save_on_exit=True) as song:
@@ -163,9 +166,6 @@ class SignalProcessor:
                                            end_index=None,
                                            cr_proc_number_of_filters=None):
 
-        # TODO check if combinations contain all the 5 filters and no repeated filters - it seems that it does
-        #  contain all the filters - but i will keep this to do for further testing @BR20240311
-
         """
         This function takes a dict of all possible filter settings and creates all possible combinations of them.
         One file name corresponds to a proc var.
@@ -188,6 +188,9 @@ class SignalProcessor:
         :param end_index: the end index of the file and of the processing variant (can be used for parallelization)
         :return: dict of all possible combinations of filter settings for multiple output file names
         {'fname_[no].wav': {'filter_type(s)': {'param(s)': value(s), ...}, ...}, ...}
+
+        @BR20240311 checked if combinations contain all the 5 filters and no repeated filters - it seems that it does
+        contain all the filters - might need future testing
         """
 
         list_all_proc_vars_combinations = []
@@ -226,15 +229,12 @@ class SignalProcessor:
         dict_all_proc_vars_combinations = {}
         if end_index is None:
             end_index = start_index + len(list_all_proc_vars_combinations)
-        for i in range(start_index, end_index):   # TODO maybe add trailing zeros to the index - like 0001, 0002, etc
+        for i in range(start_index, end_index):  # TODO maybe add trailing zeros to the index - like 0001, 0002, etc
             dict_all_proc_vars_combinations[f"{capv_root_filename}_{start_index + i}.wav"] = (
                 list_all_proc_vars_combinations)[i - start_index]
         return dict_all_proc_vars_combinations
 
     def _check_dict_param_names_and_ranges(self, dict_param_names_and_ranges):
-
-        # TODO ask Moro for these values
-        #  These values should be declared somewhere globally like in a class of some sort.
 
         """
         This function checks the params are in the correct range.
@@ -286,7 +286,7 @@ class SignalProcessor:
         no_digits = np.log10(len(dict_in)) + 1
         for dk in dict_in:
             # print(f"{crt_no + 1}_{dk}".zfill(len(dk)+1+int(no_digits)))
-            dict_out[f"{crt_no + 1}_{dk}".zfill(len(dk)+1+int(no_digits))] = dict_in[dk]
+            dict_out[f"{crt_no + 1}_{dk}".zfill(len(dk) + 1 + int(no_digits))] = dict_in[dk]
             crt_no += 1
             if dk in dict_out.keys():
                 dict_out.pop(dk)
@@ -297,7 +297,6 @@ class SignalProcessor:
     ######################################>> process_signal_all_variants <<############################################
 
     def _remove_numbers_from_proc_var(self, dict_in):  # for process_signal_all_variants() and load_data_for_training()
-        # TODO testme
         """
         This function removes the numbers from the filter band names.
         :param dict_in:
@@ -306,6 +305,8 @@ class SignalProcessor:
         dict_out = {}
         for k in dict_in:
             dict_out[re.sub("[1-9]+", "", k)[1::]] = dict_in[k]
+            if k in dict_out.keys():
+                dict_out.pop(k)
         return dict_out
 
     def _lowercase_filter_bands(self, dict_in):  # for process_signal_all_variants() and load_data_for_training()
@@ -317,6 +318,8 @@ class SignalProcessor:
         dict_out = {}
         for k in dict_in:
             dict_out[k.lower()] = dict_in[k]
+            if k in dict_out.keys() and k != k.lower():
+                dict_out.pop(k)
         return dict_out
 
     def _create_filter(self, filter_type_name, dict_params):
@@ -357,9 +360,8 @@ class SignalProcessor:
         :return:
         """
         # output: np.ndarray[Any, np.dtype[np.floating[np._typing._64Bit] | np.float_]] = np.zeros(signal_in.size)
-        dict_procs_single_variant = self._lowercase_filter_bands(dict_procs_single_variant)  # TODO testme
-        dict_procs_single_variant = self._remove_numbers_from_proc_var(dict_procs_single_variant)  # todo testme
-        print('363 line',dict_procs_single_variant)
+        dict_procs_single_variant = self._lowercase_filter_bands(dict_procs_single_variant)
+        dict_procs_single_variant = self._remove_numbers_from_proc_var(dict_procs_single_variant)
         for crt_filter_type_name in dict_procs_single_variant.keys():
             cftn = crt_filter_type_name
             if cftn[-1] in '1234567890':
@@ -389,6 +391,7 @@ class SignalProcessor:
             f.process(signal_out, signal_out)
         self.reset()  # after signal variant was processed, reset
         return signal_out
+
     ######################################>> process_signal_all_variants <<############################################
 
     #########################################>> load_data_for_training <<##############################################
@@ -423,6 +426,9 @@ class SignalProcessor:
                     hp_cutoff, hp_resonance, lp_cutoff, lp_resonance, ls_cutoff, ls_resonance, ls_dbgain,
                      p1_center, p1_resonance, p1_dbgain, p2_center, p2_resonance, p2_dbgain,
                       hs_cutoff, hs_resonance, hs_dbgain - 16 params, 16 output neurons OR without HS and LP - 11 params
+
+                # TODO may need to reorder the above params^
+                      because the ordering of dict keys was solved : added the numbers to the filter bands
         """
         normalized_param = None
         list_out_params = []
@@ -440,15 +446,17 @@ class SignalProcessor:
                     normalized_param = self._normalize_value(param_dict[param_name], self.dbgain_min,
                                                              self.dbgain_max, norm_type=normalize_type)
 
-        # # normalize 0,1
-        # normalized_param = (param_dict[param_name] - self.dbgain_min) / (self.dbgain_max - self.dbgain_min)
-        # # normalize -1,1
-        # normalized_param = (param_dict[param_name] - self.dbgain_min) / (self.dbgain_max - self.dbgain_min) * 2 - 1
-        # # normalize -1, 1 max abs
-        # normalized_param = param_dict[param_name] / max(np.abs([self.dbgain_min, self.dbgain_max]))
+                # # normalize 0,1
+                # normalized_param = (param_dict[param_name] - self.dbgain_min) / (self.dbgain_max - self.dbgain_min)
+                # # normalize -1,1
+                # normalized_param = ((param_dict[param_name] - self.dbgain_min) /
+                # (self.dbgain_max - self.dbgain_min) * 2 - 1)
+                # # normalize -1, 1 max abs
+                # normalized_param = param_dict[param_name] / max(np.abs([self.dbgain_min, self.dbgain_max]))
                 if normalized_param:
                     list_out_params.append(normalized_param)
         return list_out_params
+
     #########################################>> load_data_for_training <<##############################################
 
     def create_end_to_end_all_proc_vars_combinations(self, dict_param_names_and_ranges, root_filename="eq-ed",
@@ -474,27 +482,32 @@ class SignalProcessor:
         :param number_of_filters:
         :param sr_threshold:
         :return:
+        @BR20240316 Modified number of filtexception with debugger info too.
         """
         self._check_dict_param_names_and_ranges(dict_param_names_and_ranges)
-        print(f"{debugger_details()} dict_param_names_and_ranges = ", dict_param_names_and_ranges)
-        dict_param_names_and_ranges = self._number_filter_bands(dict_param_names_and_ranges)
-        print(f"{debugger_details()} dict_param_names_and_ranges = ", dict_param_names_and_ranges)
-        if len(dict_param_names_and_ranges) == number_of_filters:  # TODO test this if
-            if self.rate < sr_threshold:  # todo test this
+        if len(dict_param_names_and_ranges) == number_of_filters:  # TODO may need future testing (20240316 worked fine)
+            if self.rate < sr_threshold:
                 print(f"Sample rate is below {sr_threshold} Hz, so high shelf and low pass filters will not be used.")
-                for filter_type in dict_param_names_and_ranges:
+                for filter_type in dict_param_names_and_ranges.copy():
                     if "high_shelf" in filter_type or "low_pass" in filter_type:
                         dict_param_names_and_ranges.pop(filter_type, None)
+                        if number_of_filters is not None:
+                            number_of_filters -= 1
+            # QUESTION/TBD: do I want to number the filter bands before or after removing high freq filters?
+            #  before: it's like disabling some bands and leaving others unaffected. after: "renumbering" bands
 
+            # TODO should I also add a safety measure for the filter frequencits (i.e. if there is any freq above sr/2)
+                # to raise an exception: "Filter frequency is above the Nyquist frequency."
+            dict_param_names_and_ranges = self._number_filter_bands(dict_param_names_and_ranges)
             dict_unraveled_filter_settings = self._create_proc_vars_multiple_filter_type_names(
                 dict_param_names_and_ranges)
             ete_dict_filenames_and_process_variants = self._create_all_proc_vars_combinations(
                 dict_unraveled_filter_settings, root_filename, start_index, end_index, number_of_filters)
             return ete_dict_filenames_and_process_variants
-        else:  # TODO test this
-            raise Exception(f"Number of filters in dict_param_names_and_ranges ({len(dict_param_names_and_ranges)}) "
-                            f"does not match the number_of_filters ({number_of_filters}).")
-
+        else:
+            raise Exception(f"{debugger_details()} Number of filters in dict_param_names_and_ranges "
+                            f"({len(dict_param_names_and_ranges)}) does not match "
+                            f"the number_of_filters ({number_of_filters}).")
 
     def process_signal_all_variants(self, asv_dict_filenames_and_process_variants, normalize=True):
         """
@@ -513,17 +526,15 @@ class SignalProcessor:
         Also removed the asv_signal_in parameter and instead called from self.
 
         """
-        # TODO add an output folder in the self class init and save the files there
 
-        # TODO maybe modify to first call the create_all_proc_vars and then the backtracking idk
-        #  IDK if this todo was done or what it was about
         for str_file_pre_extension in asv_dict_filenames_and_process_variants:
             # last e - unprocessed input signal name
             str_unproc_sig_name = self.in_signal_path.split("/")[-1].split(".")[0]
-            sig_ext = str_unproc_sig_name.split(".")[-1]  # last e - signal extension
+            # sig_ext not used because .wav is in the so-called pre_extension
+            # sig_ext = self.in_signal_path.split("/")[-1].split(".")[-1]  # last e - signal extension
             crt_file_path = r"/".join([self.out_signals_root_folder,
                                        "_".join([str_unproc_sig_name,
-                                                str_file_pre_extension+"."+sig_ext])])
+                                                 str_file_pre_extension])])
             # for filter_type in dict_filenames_and_process_variants[filename]: # added
             np_arr_out_sig = self._process_signal_variant(self.signal, asv_dict_filenames_and_process_variants[
                 str_file_pre_extension])  # signal_in -> out_sig
@@ -540,9 +551,15 @@ class SignalProcessor:
                 reset = False
 
     def load_data_for_training(self, training_data_folder):
+        """
+        This function loads the metadata from the processed signals and normalizes it based on the param limits
+        in the self of  this class.
+        :param training_data_folder: [str]
+        :return: [list] of [float] with the ordered params for each filter - order as in the metadata
 
-        # TODO create fuction body and use _normalize_params to normalize the parameters in the metadata of
-        #  the processed signals and then check how it works
+        @BR20240315 Fixed bad normalization for dbgain (it was normalized in -1,1 regardless of normalize type).
+        @BR20240316 Tested function
+        """
 
         list_all_metadata = []
         # load metadata
@@ -557,11 +574,11 @@ class SignalProcessor:
                 # it will be like a matrix of params. each row is the list of params for a signal (Y labels)
                 list_all_metadata.append(list_normed_params)
 
-        return list_all_metadata  # TODO testme
+        return list_all_metadata
 
 
-sig_path = r'D:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise-mono.wav'
-aas = SignalProcessor(sig_path, resample_to=None)
+sig_path = r'D:/PCON/Disertatie/AutoMixMaster/datasets/diverse-test/white-noise-mono.wav'
+aas = SignalProcessor(sig_path, resample_to=22050)
 
 # Usage tips: You need to add numbers at the end of every signal processing type, because
 # you can have multiple of the same type such as peak1, peak2, peak3 etc. - always name them with numbers at the end
@@ -585,12 +602,12 @@ dict_filenames_and_process_variants = aas.create_end_to_end_all_proc_vars_combin
                                                                                        start_index=0, end_index=None,
                                                                                        number_of_filters=no_filters)
 for d in dict_filenames_and_process_variants:
-    print(d, '---')
+    print("file name in dict_filenames_and_process_variants", d, '-----')
     print(set(dict_filenames_and_process_variants[d].keys()))
     print(len(set(dict_filenames_and_process_variants[d].keys())))
     print(dict_filenames_and_process_variants[d])
-asdf
-# aas.process_signal_all_variants(dict_filenames_and_process_variants)
+aas.process_signal_all_variants(dict_filenames_and_process_variants)
+
 # aas.process_signal_all_variants(signal_in, {test_fname: dict_filenames_and_process_variants[test_fname]})
 training_data = aas.load_data_for_training("../processed-audio-latest")
 # path = r'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'

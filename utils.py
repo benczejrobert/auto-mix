@@ -4,6 +4,7 @@ def debugger_details():
     """
     Returns the file, function and line number of the caller.
     Usage: print(f"{debugger_details()} variables/text you want to print")
+    :rtype: object
     :return:
     """
     cf = currentframe()
@@ -136,7 +137,7 @@ def to_absolute(db,ref=1,power=False):
 
 #TODO what if I do it real-time?
 
-#TODO motivul pentru care se fute bpm-ul e pentru ca eu extrag bpm-ul cu un extractor prost de bpm
+#TODO motivul pentru care se strica bpm-ul e pentru ca eu extrag bpm-ul cu un extractor prost de bpm
 
 def tempo(signal, rate):
     onset_env = librosa.onset.onset_strength(signal, sr=rate)
