@@ -50,4 +50,4 @@ def dtcwpt(self):
 
     #medii si variante din abs-uri? dar din faze?
     return np.reshape(vecs_t.lowpass,(vecs_t.lowpass.shape[0],)).tolist()
-    return vecs_t
+    # return vecs_t

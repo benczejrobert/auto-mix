@@ -7,6 +7,22 @@ from utils import *
 
 # TODO make another class for the feature extraction because such a class wouldn't necessarily be project specific HERE
 
+# todo add some global dict that contains the normalization values for the parameters -
+#  this will be added to the init with setattr and a for loop
+
+# todo also add the file paths for the input and output signals
+#  also add the sample rate
+
+# The diff maker and the feature extractors will load the stuff from the 'global' params
+
+# TODO make a (global) param that allows for choosing if diff is feature based or signal based
+#  if it's feature based:
+#       1) extract features from signal
+#       2) diff features
+#  if it's signal based:
+#       1) the diff maker will be used on the signal
+#       2) extract features from the diff
+
 # input_sig <-> output&metadata
 
 # noinspection PyMethodMayBeStatic,PyAttributeOutsideInit
@@ -15,11 +31,13 @@ class SignalProcessor:
         This class is used to process signals with various filters and save the processed signals with metadata.
     """
 
-    def __init__(self, in_signal_path, out_signals_root_folder=r"../processed-audio-latest", resample_to=None):
+    def __init__(self, in_signal_path, processed_signals_root_folder=r"../processed-audio-latest",
+                 features_folder=r"../features-latest", resample_to=None):
 
         """
         This function creates a SignalProcessor class instance for a single signal.
 
+        :param features_folder:
         :param in_signal_path:
         :param resample_to:
         @BR20240309 Added the rate parameter and self signal to the class.
@@ -41,7 +59,8 @@ class SignalProcessor:
 
         # paths
         self.in_signal_path = in_signal_path
-        self.out_signals_root_folder = out_signals_root_folder
+        self.out_signals_root_folder = processed_signals_root_folder
+        self.features_folder = features_folder
 
         # signal and rate
         self.signal, self.rate = librosa.load(in_signal_path, sr=resample_to)
@@ -51,6 +70,8 @@ class SignalProcessor:
         # create the output folder if it doesn't exist
         if not os.path.exists(self.out_signals_root_folder):
             os.mkdir(self.out_signals_root_folder)
+        if not os.path.exists(self.features_folder):
+            os.mkdir(self.features_folder)
         if self.rate is None:
             # TODO make this output current error line and also name of the instance
             #     maybe also line where the class instance is in the code
@@ -68,7 +89,6 @@ class SignalProcessor:
         :param reset_tags:
         :param verbose_start:
         :param verbose_final:
-        :return:
 
         @BR20240311 This function gives the correctly ordered metadata to the file, with
            the metadata names in lowercase BUT
@@ -550,7 +570,7 @@ class SignalProcessor:
                                     reset, False, True)
                 reset = False
 
-    def load_data_for_training(self, training_data_folder):
+    def load_labels_metadata_for_training(self, training_data_folder):
         """
         This function loads the metadata from the processed signals and normalizes it based on the param limits
         in the self of  this class.
@@ -563,11 +583,11 @@ class SignalProcessor:
 
         list_all_metadata = []
         # load metadata
-        for file in os.listdir(training_data_folder):
-            if file.endswith(".wav"):
-                file_path = os.path.join(training_data_folder, file)
-                metadata = self.read_metadata(file_path)
-                print(f"--- {debugger_details()} metadata for sound file ", file, " ---")
+        for crt_file in sorted(os.listdir(training_data_folder)):
+            crt_file_path = os.path.join(training_data_folder, crt_file)
+            if crt_file_path.endswith(".wav"):
+                metadata = self.read_metadata(crt_file_path)
+                print(f"--- {debugger_details()} metadata for sound crt_file ", crt_file, " ---")
                 print("\t", metadata)
                 # normalize metadata
                 list_normed_params = (self._normalize_params(metadata))
@@ -577,7 +597,47 @@ class SignalProcessor:
         return list_all_metadata
 
 
+    def create_features_diff_for_training(self, obj_feature_extractor, processed_audio_folder, pre_diff=True):
+        # TODO testme 20240318
+        """
+            This function loads the processed signals and extracts the features from them.
+            :param obj_feature_extractor: [FeatureExtractor]
+            :param processed_audio_folder: [str]
+            :param pre_diff: [bool] if True, the function will load the processed signals and
+                            subtract them to extract the features.
+            :return: [list] of [np.ndarray] with the features for each signal
+        """
+        for crt_file in sorted(os.listdir(processed_audio_folder)):
+            # load the processed signals
+            if crt_file.endswith(".wav"):
+                crt_file_path = os.path.join(processed_audio_folder, crt_file)
+                crt_signal, rate = librosa.load(crt_file_path)
+                metadata = self.read_metadata(crt_file_path)
+                list_normed_params = (self._normalize_params(metadata))
+                # output_file_path = None
+                # difference before features extracted
+                if pre_diff:
+                    output_file_path = os.path.join(self.features_folder, f"features_diff_{crt_file.split('.')[0]}.npy")
+                    # subtract the signals
+                    signal_diff = self.signal - crt_signal  # assuming rate was equal for all signals
+                    # extract the features # todo change the way extract_features is called
+                    diff_features = obj_feature_extractor.extract_features(signal_diff)
+                # difference after features extracted
+                else:
+                    output_file_path = os.path.join(self.features_folder, f"diff_features_{crt_file.split('.')[0]}.npy")
+                    # extract the features # todo change the way extract_features is called
+                    features_in_signal = obj_feature_extractor.extract_features(self.signal)
+                    features_crt_reference_signal = obj_feature_extractor.extract_features(crt_signal)
+                    # subtract the features
+                    diff_features = features_in_signal - features_crt_reference_signal
+                # save the features with the metadata:
+                np.save(output_file_path, diff_features)
+                self.write_metadata(output_file_path, "normalized_mix_params", str(list_normed_params),
+                                    True, False, False)
+
+
 sig_path = r'D:/PCON/Disertatie/AutoMixMaster/datasets/diverse-test/white-noise-mono.wav'
+out_signals_root_folder = r"../processed-audio-latest"
 aas = SignalProcessor(sig_path, resample_to=22050)
 
 # Usage tips: You need to add numbers at the end of every signal processing type, because
@@ -609,5 +669,5 @@ for d in dict_filenames_and_process_variants:
 aas.process_signal_all_variants(dict_filenames_and_process_variants)
 
 # aas.process_signal_all_variants(signal_in, {test_fname: dict_filenames_and_process_variants[test_fname]})
-training_data = aas.load_data_for_training("../processed-audio-latest")
+training_data = aas.load_labels_metadata_for_training("../processed-audio-latest")
 # path = r'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'
