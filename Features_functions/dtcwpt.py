@@ -5,7 +5,7 @@
 
 def dtcwpt(self):
 
-    '''
+    """
     Perform a *n*-level DTCWT decompostion on a 1D column vector *X* (or on
         the columns of a matrix *X*).
 
@@ -26,8 +26,8 @@ def dtcwpt(self):
         containing the lowpass signal for corresponding scales finest to
         coarsest. This is not required for the inverse and may be *None*.
 
-
-    '''
+        @BR20240319 Removed .tolist() from the return statement
+    """
 
     transform = dtcwt.Transform1d() #todo maybe make this output row vector not col vect.
     #todo vezi cum faci cu n_levels ca sa poti parametriza scula
@@ -49,5 +49,5 @@ def dtcwpt(self):
     #features need shape of (len,) or -> tolist
 
     #medii si variante din abs-uri? dar din faze?
-    return np.reshape(vecs_t.lowpass,(vecs_t.lowpass.shape[0],)).tolist()
+    return np.reshape(vecs_t.lowpass,(vecs_t.lowpass.shape[0],))
     # return vecs_t
