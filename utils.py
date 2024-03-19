@@ -1,5 +1,29 @@
 from imports import *
 
+def amplitude(W_signal):
+    return np.abs(W_signal)
+
+def FFT(w_signal, N_fft):
+    """
+    Arguments:
+
+
+        w_signal: an array of windows from a signal, of size #windows x window_length
+
+
+        N_fft:  #of points to perform FFT
+
+    Outputs:
+
+
+        W_signal: an array containing the FFT of each window, of size #windows x N_fft
+
+    """
+
+    W_signal = np.fft.fft(w_signal, N_fft, axis=-1)
+
+    return np.array(W_signal)
+
 def debugger_details():
     """
     Returns the file, function and line number of the caller.
@@ -49,8 +73,15 @@ def plot_signal(signal, rate, title = 'Signal', xlabel = 'Time (s)', ylabel = 'A
 def plot_fft(signal, rate, title = 'FFT', xlabel = 'Frequency (Hz)', ylabel = 'Amplitude'):
     fft = np.fft.fft(signal)
     magnitude = np.abs(fft)
-    frequency = np.linspace(0, rate, len(magnitude))
+    N = len(signal)
+    n = np.arange(N)
+    T = N / rate
+    frequency = n / T
+
+    # display fft of np_arr_out_sig
+    plt.figure()
     plt.plot(frequency, magnitude)
+    plt.xlim(0, rate//2)
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
@@ -173,3 +204,12 @@ def generate_combinations(input_dict):
         result.append(output_dict)
 
     return result
+
+
+def squared_median_abs_dev(x):
+    if len(x.shape) == 1:
+        return scipy.stats.median_absolute_deviation(x)**2
+    elif len(x.shape) == 2:
+        return np.mean(scipy.stats.median_absolute_deviation(x, axis=1)**2)
+    else:
+        raise TypeError("Input must be a vector or a matrix")

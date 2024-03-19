@@ -1,5 +1,7 @@
-from utils import *
+import matplotlib.pyplot as plt
 
+from utils import *
+from feature_extractor import *
 
 # https://pypi.org/project/yodel/
 # https://codeandsound.wordpress.com/2014/10/09/parametric-eq-in-python/
@@ -96,8 +98,9 @@ class SignalProcessor:
            This behavior can be seen when reading the metadata from the file
            (either with verbose_start, verbose_final or with read_metadata() function).
 
-       @BR20240316 This behavior was fixed using the _number_filter_bands() function and _lowercase_filter_bands().
+        @BR20240316 This behavior was fixed using the _number_filter_bands() function and _lowercase_filter_bands().
            This fix will not be applied to the verbose_start and verbose_final sections in this function.
+        @BR20240319 This function can not modify the metadata of npy files and probably other formats.
         """
 
         with taglib.File(file_path, save_on_exit=True) as song:
@@ -137,8 +140,8 @@ class SignalProcessor:
         """
         keys = dict_param_names_and_ranges.keys()
         values = dict_param_names_and_ranges.values()
-        print("line 38 dict_param_names_and_ranges = ", dict_param_names_and_ranges)
-        print("line 39 values = ", *values)
+        # print("line 38 dict_param_names_and_ranges = ", dict_param_names_and_ranges)
+        # print("line 39 values = ", *values)
         combinations = list(product(*values))
 
         list_param_names_combo = []
@@ -321,10 +324,12 @@ class SignalProcessor:
         This function removes the numbers from the filter band names.
         :param dict_in:
         :return:
+        @BR20240319 Added ^ and _ to regex to only remove the numbers in the first part of the string.
+        Removed the part that trails 1st character.
         """
         dict_out = {}
         for k in dict_in:
-            dict_out[re.sub("[1-9]+", "", k)[1::]] = dict_in[k]
+            dict_out[re.sub(r"^[1-9]+_", "", k)] = dict_in[k]
             if k in dict_out.keys():
                 dict_out.pop(k)
         return dict_out
@@ -369,10 +374,10 @@ class SignalProcessor:
         :return:
         """
 
-    def _create_filters_single_proc(self, dict_procs_single_variant):
+    def _create_filters_single_proc(self, dict_proc_sg_variant):
         """
         This function creates all the filters for a single processing variant.
-        :param dict_procs_single_variant:
+        :param dict_proc_sg_variant:
 
         Example: {low_shelf: {"cutoff": 1000, "resonance": 2.0, "dbgain": 2.0},
                  high_shelf: {"cutoff": 1000, "resonance": 2.0, "dbgain": 2.0}
@@ -380,14 +385,14 @@ class SignalProcessor:
         :return:
         """
         # output: np.ndarray[Any, np.dtype[np.floating[np._typing._64Bit] | np.float_]] = np.zeros(signal_in.size)
-        dict_procs_single_variant = self._lowercase_filter_bands(dict_procs_single_variant)
-        dict_procs_single_variant = self._remove_numbers_from_proc_var(dict_procs_single_variant)
-        for crt_filter_type_name in dict_procs_single_variant.keys():
+        dict_proc_sg_variant = self._lowercase_filter_bands(dict_proc_sg_variant)
+        dict_proc_sg_variant = self._remove_numbers_from_proc_var(dict_proc_sg_variant)
+        for crt_filter_type_name in dict_proc_sg_variant.keys():
             cftn = crt_filter_type_name
             if cftn[-1] in '1234567890':
                 cftn = cftn[:-1]
             self._create_filter(filter_type_name=cftn, dict_params={"samplerate": self.rate,
-                                                                    **dict_procs_single_variant[
+                                                                    **dict_proc_sg_variant[
                                                                         crt_filter_type_name]})
         return self.filters
 
@@ -529,7 +534,7 @@ class SignalProcessor:
                             f"({len(dict_param_names_and_ranges)}) does not match "
                             f"the number_of_filters ({number_of_filters}).")
 
-    def process_signal_all_variants(self, asv_dict_filenames_and_process_variants, normalize=True):
+    def process_signal_all_variants(self, asv_dict_filenames_and_process_variants, normalize=True, verb_start=False, verb_final=False):
         """
         This function processes the input sig with all the processings in the asv_dict_filenames_and_process_variants.
         This function that calls _process_signal_variant multiple times by iterating a dict of dicts.
@@ -540,11 +545,13 @@ class SignalProcessor:
 
         :param asv_dict_filenames_and_process_variants:
         :param normalize:
+        :param verb_start:
+        :param verb_final:
         :return:
 
         @BR20240309 Added the normalize parameter to the function signature.
         Also removed the asv_signal_in parameter and instead called from self.
-
+        @BR20240319 Added the verb_start and verb_final parameters to the function signature.
         """
 
         for str_file_pre_extension in asv_dict_filenames_and_process_variants:
@@ -560,6 +567,7 @@ class SignalProcessor:
                 str_file_pre_extension])  # signal_in -> out_sig
             if normalize:
                 np_arr_out_sig = normalization(np_arr_out_sig)
+
             sf.write(crt_file_path, np_arr_out_sig, self.rate)
 
             reset = True
@@ -567,7 +575,7 @@ class SignalProcessor:
                 # write signal to disk using metadata as well. write metadata one by one
                 self.write_metadata(crt_file_path, filter_type,
                                     str(asv_dict_filenames_and_process_variants[str_file_pre_extension][filter_type]),
-                                    reset, False, True)
+                                    reset, verb_start, verb_final)
                 reset = False
 
     def load_labels_metadata_for_training(self, training_data_folder):
@@ -608,49 +616,61 @@ class SignalProcessor:
             :return: [list] of [np.ndarray] with the features for each signal
         """
         for crt_file in sorted(os.listdir(processed_audio_folder)):
+            print(f"--- Creating training features for: {crt_file} ---")
             # load the processed signals
             if crt_file.endswith(".wav"):
                 crt_file_path = os.path.join(processed_audio_folder, crt_file)
                 crt_signal, rate = librosa.load(crt_file_path)
                 metadata = self.read_metadata(crt_file_path)
+                print(f"{debugger_details()} metadata for sound crt_file", crt_file,':', metadata, " ---")
                 list_normed_params = (self._normalize_params(metadata))
                 # output_file_path = None
                 # difference before features extracted
                 if pre_diff:
-                    output_file_path = os.path.join(self.features_folder, f"features_diff_{crt_file.split('.')[0]}.npy")
+                    output_file_path = os.path.join(self.features_folder, f"features_diff_and_params_{crt_file.split('.')[0]}.npy")
                     # subtract the signals
                     signal_diff = self.signal - crt_signal  # assuming rate was equal for all signals
-                    # extract the features # todo change the way extract_features is called
+                    # extract the features
                     diff_features = obj_feature_extractor.extract_features(signal_diff)
                 # difference after features extracted
                 else:
-                    output_file_path = os.path.join(self.features_folder, f"diff_features_{crt_file.split('.')[0]}.npy")
-                    # extract the features # todo change the way extract_features is called
+                    output_file_path = os.path.join(self.features_folder, f"diff_features_and_params_{crt_file.split('.')[0]}.npy")
+                    # extract the features
                     features_in_signal = obj_feature_extractor.extract_features(self.signal)
                     features_crt_reference_signal = obj_feature_extractor.extract_features(crt_signal)
                     # subtract the features
                     diff_features = features_in_signal - features_crt_reference_signal
                 # save the features with the metadata:
-                np.save(output_file_path, diff_features)
-                self.write_metadata(output_file_path, "normalized_mix_params", str(list_normed_params),
-                                    True, False, False)
-
+                np.save(output_file_path, (diff_features, list_normed_params))  # saves tuple of features and params
 
 sig_path = r'D:/PCON/Disertatie/AutoMixMaster/datasets/diverse-test/white-noise-mono.wav'
-out_signals_root_folder = r"../processed-audio-latest"
-aas = SignalProcessor(sig_path, resample_to=22050)
+out_signals_root_folder = r"../processed-audio-1"
+sample_rate = 22050
+aas = SignalProcessor(sig_path, resample_to=sample_rate)
+
+feature_dict = {'sr': sample_rate, 'n_fft': 4096*4, 'n_mfcc': 26, 'hop_length': 512//4, 'margin': 3.0, 'n_lvls':5,'wavelet_type':'db1'}
+feature_list = ['fft'] # ['spect', 'mel_spect']
+variance_type = 'smad'  #[string], type of variance, either 'var' or 'smad'
+raw_features = True #[bool] if True, skips mean and var extraction from the audio features in the feature list
+keep_feature_dims = True #[bool] if True, do not reduce individual features' dimensions to 1D shape. Only useful if raw_features is True
+
+# TODO update the FeatureExtractor class and make it more dynamic. Also update the files in Features_Functions folder
+feats_extractor = FeatureExtractor(feature_list, feature_dict, variance_type,raw_features,keep_feature_dims)
+
+proc_end_to_end = False
+create_training_features = True
 
 # Usage tips: You need to add numbers at the end of every signal processing type, because
 # you can have multiple of the same type such as peak1, peak2, peak3 etc. - always name them with numbers at the end
 
 # Usage tips: include dbgain 0 if you want to ignore a certain type of filter OR remove it from the below dict.
 dict_all_filter_settings = {
-    "high_pass": {"cutoff": range(100, 101, 1000), "resonance": range(2, 3)},
-    "low_shelf": {"cutoff": range(200, 201, 1000), "resonance": range(2, 3), "dbgain": list(range(-12, 13, 11))},
-    "peak1": {"center": range(8000, 12001, 3000), "resonance": range(2, 3), "dbgain": list(range(-12, 13, 11))},
-    "peak2": {"center": range(1000, 1001), "resonance": range(2, 3), "dbgain": [-40]},
+    "high_pass": {"cutoff": range(200, 201, 1000), "resonance": range(2, 3)},
+    "low_shelf": {"cutoff": range(200, 201, 1000), "resonance": range(2, 3), "dbgain": list(range(12, 13, 11))},
+    "peak1": {"center": range(1000, 7001, 3000), "resonance": range(2, 3), "dbgain": list(range(-40, 41, 11))},
+    "peak2": {"center": range(8000, 8001), "resonance": range(2, 3), "dbgain": [40]},
     "low_pass": {"cutoff": range(10000, 10001, 1000), "resonance": range(2, 3)},
-    "high_shelf": {"cutoff": [9000], "resonance": [2], "dbgain": [6]}
+    "high_shelf": {"cutoff": [9000], "resonance": [2], "dbgain": [0]}
 }
 # Change this to the number of filters you want to use or None
 # to use all possible combinations of filters, any number of filters.
@@ -663,11 +683,15 @@ dict_filenames_and_process_variants = aas.create_end_to_end_all_proc_vars_combin
                                                                                        number_of_filters=no_filters)
 for d in dict_filenames_and_process_variants:
     print("file name in dict_filenames_and_process_variants", d, '-----')
-    print(set(dict_filenames_and_process_variants[d].keys()))
     print(len(set(dict_filenames_and_process_variants[d].keys())))
     print(dict_filenames_and_process_variants[d])
-aas.process_signal_all_variants(dict_filenames_and_process_variants)
+if proc_end_to_end:
+    aas.process_signal_all_variants(dict_filenames_and_process_variants)
+
+if create_training_features:
+    aas.create_features_diff_for_training(obj_feature_extractor=feats_extractor,
+                                          processed_audio_folder=out_signals_root_folder, pre_diff=False)
 
 # aas.process_signal_all_variants(signal_in, {test_fname: dict_filenames_and_process_variants[test_fname]})
-training_data = aas.load_labels_metadata_for_training("../processed-audio-latest")
+training_data = aas.load_labels_metadata_for_training(out_signals_root_folder)
 # path = r'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'

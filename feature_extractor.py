@@ -1,13 +1,22 @@
 from utils import *
 
-class FeatureExtractor:
-    def __init__(self, location='Features_functions', extension='py', feature_base_name='feature'):
+class FeatureExtractor:  # TODO testme @20240318 - updated interface.
+    # TODO remake class to process signal (1D array) as well as list of windows (2D array)
+    def __init__(self, feature_list, features_dict, variance_type='var', raw_features = True,
+                 keep_feature_dims = False, location='Features_functions', extension='py', feature_base_name='feature'):
         """The constructor should set the location and extension of the features, and load all the features."""
         self.__location = str(location)
         self.__extension = str(extension)
         self.signal = None
         self.__feature_base_name = str(feature_base_name)
         self.__load_features()
+
+        self.feature_list = feature_list
+        self.features_dict = features_dict
+        self.variance_type = variance_type
+        self.raw_features = raw_features
+        self.keep_feature_dims = keep_feature_dims
+
 
 
     def __get_feature_name(self, feature_id):
@@ -17,25 +26,25 @@ class FeatureExtractor:
     def __set_params(self, signal, features_dict=None):
         '''This method should set the signal and all the parameters to be used for extracting features, e.g. self.n_fft = features_dict['n_fft]'''
         setattr(self, 'signal', np.asanyarray(signal, dtype=np.float64))
-        for key, value in features_dict.items():
+        for key, value in self.features_dict.items():
             setattr(self, key, value)
         # print("self.n_lvls = ", self.n_lvls)
         # print("features_dict = ", features_dict)
 
     def __load_features(self):
         '''This method should load all the existing features and save them as atributes of this object, e.g. self.fft'''
-        for file in os.listdir(self.__location):
-            if not file.endswith("." + self.__extension):
-               continue
-            # print("in load features file = ", file)
-            function = open(os.path.join(self.__location, file), 'r').read()
+        for feature_function_file_name in os.listdir(self.__location):
+            if not feature_function_file_name.endswith("." + self.__extension):
+                continue
+            function = open(os.path.join(self.__location, feature_function_file_name), 'r').read()
             dic = {}
             exec(function, None, dic)
             reference = list(dic.values())[0]
-            feature_name = self.__get_feature_name(file.split('.')[0])
+            feature_name = self.__get_feature_name(feature_function_file_name.split('.')[0])
             # print("feature_name = ", feature_name)
             # print("reference = ", reference)
             setattr(self, feature_name, reference)
+
 
     def __extract_feature_by_id(self, id):
         '''This method should extract only the feature with the given unique id'''
@@ -46,18 +55,22 @@ class FeatureExtractor:
             except:
                 self.__load_features()
                 try:
+                    print(debugger_details(), "retry load features")
                     return getattr(self, feature_id)(self)
                 except:
-                    raise Exception('Attribute ' + feature_id + ' not found after reloading.')
+                    print(debugger_details(), "retry load features failed")
+                    raise Exception('Attribute ' + feature_id + ' not found after reloading. '
+                                                                'Or calling the function failed:')
         else:
             self.__load_features()
             try:
                 return getattr(self, feature_id)(self)
             except:
-                raise Exception('Attribute ' + feature_id + ' not found after reloading.')
+                raise Exception('Attribute ' + feature_id + ' not found after reloading. '
+                                                            'Or calling the function failed:')
 
 
-    def extract_features(self, signal, feature_list, features_dict, variance_type='var', raw_features = True, keep_feature_dims = False):
+    def extract_features(self, signal):  #, feature_list, features_dict, variance_type='var', raw_features = True, keep_feature_dims = False):
         '''This method should return a list of features for a given signal.
          If the signal is 1D (a window), the mean and variance should be extracted from each feature.
             If the signal is 2D (a matrix of windows), the features should be extracted from each window.
@@ -77,15 +90,16 @@ class FeatureExtractor:
         :param raw_features: bool
         :param keep_feature_dims: bool
 
-        :return: list
+        :return: np.array
+        @BR20240319 updated return type from list to np.array
         '''
         #returns the list of features or matrix of features if raw dims is set. e.g. mfcc = matrix & you output the matrix as such
 
         features = []
-        self.__set_params(signal, features_dict)
-        for id in feature_list:
+        self.__set_params(signal, self.features_dict)
+        for id in self.feature_list:
 
-            if raw_features:   #extracts features only without calculating mean & var.
+            if self.raw_features:   #extracts features only without calculating mean & var.
                 feature = self.__extract_feature_by_id(id)
                 try:
                     fshapelen = (len(feature.shape) != 2)
@@ -96,13 +110,13 @@ class FeatureExtractor:
                         features.extend(feature)  # if feature is an iterable
                     except:
                         features.append(feature)  # if feature is not an iterable i.e. tempo
-                if id == 'mfcc' and not keep_feature_dims:
+                if id == 'mfcc' and not self.keep_feature_dims:
                     feature = np.mean(feature, axis=-1)
                 try:
                     features.extend(feature)  # if feature is an iterable
                 except:
                     features.append(feature)  # if feature is not an iterable
-            if not raw_features:
+            if not self.raw_features:
                 if len(signal.shape) == 1:
                     feature = self.__extract_feature_by_id(id)
                     if id == 'tempo':
@@ -114,13 +128,13 @@ class FeatureExtractor:
                     #         features.append(feature)    #if feature is not an iterable
                     elif id == 'mfcc':
                         features.extend(np.mean(feature, axis=1))
-                        if variance_type == 'var':
+                        if self.variance_type == 'var':
                             features.extend(np.var(feature, axis=1) ** 2)
                         else:
                             features.extend(scipy.stats.median_absolute_deviation(feature, axis=1) ** 2)
                     else:
                         features.append(np.mean(feature))
-                        if variance_type == 'var':
+                        if self.variance_type == 'var':
                             features.append(np.var(feature))
                         else:
                             features.append(squared_median_abs_dev(feature)) # TODO add me to utils.py
@@ -128,4 +142,4 @@ class FeatureExtractor:
                 feature = self.__extract_feature_by_id(id)
                 features.extend(feature.tolist())
 
-        return features
+        return np.array(features)
