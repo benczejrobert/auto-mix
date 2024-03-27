@@ -1,5 +1,74 @@
 from imports import *
 
+
+def create_model(data = np.array([[[1,2,3],[1,2,3]]]), no_classes = 3, optimizer = 'adam', dropout_rate=0.5, summary=True): #_initial
+    inshape = list(data.shape)[1::]
+    input = Input(shape=inshape)
+    input2 = input
+    if len(inshape)>2:
+        #dropout = 0.4
+        inshape.append(1)
+        inshape = tuple(inshape)
+        input2 = Conv2D(input_shape=inshape,filters=1,kernel_size=(3,3),padding='same',data_format="channels_last")(input2) #unspecified
+        input2 = Activation('relu')(input2) #how many filters and what kernel size?
+        input2 = Conv2D(input_shape=inshape,filters=1,kernel_size=(3,3),padding='same',data_format="channels_last")(input2) #unspecified
+        input2 = Activation('relu')(input2)
+        # nl (macro layer nonlinearity lookup), nf = no filters, (c1,c2)kernel size. (3,5), (5,3) or (3,3) provided best accuracy
+        input2 = Conv2D(input_shape=inshape,filters=1,kernel_size=(3,3),padding='same',data_format="channels_last")(input2) #unspecified
+        input2 = BatchNormalization()(input2)   # end macro layer 1
+        input2 = MaxPooling2D(pool_size=(4, 4), padding='same')(input2)
+
+        input2 = Conv2D(input_shape=inshape,filters=1,kernel_size=(3,3),padding='same',data_format="channels_last")(input2) #unspecified
+        input2 = Activation('relu')(input2) #unspecified by Radu Dogaru
+        input2 = Conv2D(input_shape=inshape, filters=1, kernel_size=(3, 3), padding='same',data_format="channels_last")(input2)  # unspecified
+        input2 = BatchNormalization()(input2) #end macro layer 2
+        input2 = MaxPooling2D(pool_size=(4,4), padding='same')(input2)
+
+        input2 = Conv2D(input_shape=inshape, filters=1, kernel_size=(3, 3), padding='same',data_format="channels_last")(input2)  # unspecified
+        input2 = BatchNormalization()(input2)   #end macro layer 3
+        input2 = MaxPooling2D(pool_size=(4,4), padding='same')(input2)
+        input2 = GlobalAveragePooling2D()(input2)
+        input2 = Flatten()(input2)  #RDT feature processing might be the key (see prof. Dogaru paper). this is some sort of spectral feature thing
+    else:
+        print("in create model inshape = ", inshape)
+        input2 = Conv1D(input_shape=inshape,filters=1,kernel_size=1,padding='same',data_format="channels_last")(input2)
+        input2 = Flatten()(input2)
+    # hdn1 = Dense(512, name='layer1')(input2)
+    # act1 = Activation('relu')(hdn1)
+    # act1 = BatchNormalization()(act1)
+    # dp1 = Dropout(dropout_rate)(act1)
+    #
+    # hdn2 = Dense(256, name='layer2')(dp1)
+    # act2 = Activation('relu')(hdn2)
+    # # bn2 = BatchNormalization()(act2)
+    # dp2 = Dropout(dropout_rate)(act2)
+    #
+    # hdn3 = Dense(128, name='layer3')(dp2)
+    # act3 = Activation('relu')(hdn3)
+    # # bn3 = BatchNormalization()(act3)
+    # dp3 = Dropout(dropout_rate)(act3)
+    #
+    # hdn4 = Dense(64, name='layer4')(dp3)
+    # act4 = Activation('relu')(hdn4)
+    # # bn4 = BatchNormalization()(act4)
+    # dp4 = Dropout(dropout_rate)(act4)
+    #
+    # hdn5 = Dense(32, name='layer5')(dp4)
+    # act5 = Activation('relu')(hdn5)
+    # # bn5 = BatchNormalization()(act5)
+    # dp5 = Dropout(dropout_rate)(act5)
+    hdn6 = Dense(no_classes)(input2)
+    output = Activation('softmax')(hdn6)
+
+    model = Model(inputs=input, outputs=output)
+
+    if summary:
+        print(model.summary())
+
+    model.compile(optimizer=optimizer, loss=tf.keras.losses.categorical_crossentropy, metrics=['accuracy'])
+    return model
+
+
 def amplitude(W_signal):
     return np.abs(W_signal)
 

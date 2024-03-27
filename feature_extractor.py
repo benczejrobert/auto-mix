@@ -57,17 +57,17 @@ class FeatureExtractor:  # TODO testme @20240318 - updated interface.
                 try:
                     print(debugger_details(), "retry load features")
                     return getattr(self, feature_id)(self)
-                except:
+                except Exception as e:
                     print(debugger_details(), "retry load features failed")
                     raise Exception('Attribute ' + feature_id + ' not found after reloading. '
-                                                                'Or calling the function failed:')
+                                                                'Or calling the function failed:', e)
         else:
             self.__load_features()
             try:
                 return getattr(self, feature_id)(self)
-            except:
+            except Exception as e:
                 raise Exception('Attribute ' + feature_id + ' not found after reloading. '
-                                                            'Or calling the function failed:')
+                                                            'Or calling the function failed:', e)
 
 
     def extract_features(self, signal):  #, feature_list, features_dict, variance_type='var', raw_features = True, keep_feature_dims = False):
@@ -137,7 +137,7 @@ class FeatureExtractor:  # TODO testme @20240318 - updated interface.
                         if self.variance_type == 'var':
                             features.append(np.var(feature))
                         else:
-                            features.append(squared_median_abs_dev(feature)) # TODO add me to utils.py
+                            features.append(squared_median_abs_dev(feature))
             if len(signal.shape) == 2:
                 feature = self.__extract_feature_by_id(id)
                 features.extend(feature.tolist())

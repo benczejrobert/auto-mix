@@ -4,4 +4,7 @@
     <option name="sdkName" value="py310tg210gpu" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="py310tg210gpu" project-jdk-type="Python SDK" />
+  <component name="PyPackaging">
+    <option name="earlyReleasesAsUpgrades" value="true" />
+  </component>
 </project>
