@@ -1,3 +1,6 @@
+from params_preproc import *
+# Extracted features with diff because MFCCs are equal for the 2 signals. On the diff they are non-zero, so basically MFCC(diff) != diff(MFCCs)
+
 # Feature extractor
 extracted_features_folder = r"../features-latest"
 
