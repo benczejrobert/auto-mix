@@ -1,5 +1,4 @@
 # import matplotlib.pyplot as plt
-# from utils import *
 from feature_extractor import *
 
 ## import run parameters from the params files

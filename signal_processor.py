@@ -1,3 +1,4 @@
+from utils import *
 class SignalProcessor:
     """
         This class is used to process signals with various filters and save the processed signals with metadata.
