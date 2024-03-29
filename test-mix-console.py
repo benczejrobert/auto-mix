@@ -36,7 +36,7 @@ from params_features import *
 # input_sig <-> output&metadata
 
 
-aas = SignalProcessor(sig_path, resample_to=sample_rate, features_folder=extracted_features_folder, processed_signals_root_folder=out_signals_root_folder)
+aas = SignalProcessor(sig_path, resample_to=sample_rate, features_folder=extracted_features_folder, processed_signals_root_folder=preproc_signals_root_folder)
 # TODO update the FeatureExtractor class and make it more dynamic. Also update the files in Features_Functions folder
 
 
@@ -61,7 +61,6 @@ create_training_features = True
 
 if proc_end_to_end:
     today = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
-    shutil.copyfile("params_preproc.py", os.path.join(out_signals_root_folder, f"params-preproc-{today}.txt"))
     # Usage tips: You need to add numbers at the end of every signal processing type, because
     # you can have multiple of the same type such as peak1, peak2, peak3 etc. - always name them with numbers at the end
 
@@ -78,17 +77,19 @@ if proc_end_to_end:
                                                                                            end_index=None,
                                                                                            number_of_filters=no_filters)
     aas.process_signal_all_variants(dict_filenames_and_process_variants) # TODO maybe add run date to the metadata or name of the processed signals
+    shutil.copyfile("params_preproc.py", os.path.join(preproc_signals_root_folder, f"params-preproc-{today}.txt"))
     # for d in dict_filenames_and_process_variants:
     #     print("file name in dict_filenames_and_process_variants", d, '-----')
     #     print(len(set(dict_filenames_and_process_variants[d].keys())))
     #     print(dict_filenames_and_process_variants[d])
 if create_training_features:
     today = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
-    shutil.copyfile("params_features.py", os.path.join(extracted_features_folder, f"params-features-{today}.txt"))
     feats_extractor = FeatureExtractor(feature_list, feature_dict, variance_type, raw_features, keep_feature_dims)
+
     aas.create_features_diff_for_training(obj_feature_extractor=feats_extractor,
-                                          processed_audio_folder=out_signals_root_folder, pre_diff=param_pre_diff, process_entire_signal=True)
+                                          processed_audio_folder=preproc_signals_root_folder, pre_diff=param_pre_diff, process_entire_signal=True)
+    shutil.copyfile("params_features.py", os.path.join(extracted_features_folder, f"params-features-{today}.txt"))
 
 # aas.process_signal_all_variants(signal_in, {test_fname: dict_filenames_and_process_variants[test_fname]})
-# training_data = aas.load_labels_metadata_for_training(out_signals_root_folder)
+# training_data = aas.load_labels_metadata_for_training(preproc_signals_root_folder)
 # path = r'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'

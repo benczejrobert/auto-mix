@@ -2,9 +2,10 @@ small_no = 1e-320 # delay for unicity of timestamps
 
 # Signal (pre)processor
 
-sig_path = r'D:/PCON/Disertatie/AutoMixMaster/datasets/diverse-test/white-noise-mono.wav'
+# sig_path = r'D:/PCON/Disertatie/AutoMixMaster/datasets/diverse-test/white-noise-mono.wav'
+sig_path = r'D:/PCON/Disertatie/AutoMixMaster/datasets/diverse-test/resampled_white_noise.wav'
 # sig_path = r'D:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise-reaper-generated.wav'
-out_signals_root_folder = r"../processed-audio-latest"
+preproc_signals_root_folder = r"../processed-audio-latest"
 sample_rate = 22050
 dict_all_filter_settings = {
     "high_pass": {"cutoff": range(200, 201, 1000), "resonance": range(2, 3)},

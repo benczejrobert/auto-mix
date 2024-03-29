@@ -14,13 +14,13 @@ class SignalProcessor:
         :param in_signal_path:
         :param resample_to:
         @BR20240309 Added the rate parameter and self signal to the class.
-        @BR20240313 Added the out_signals_root_folder parameter to the class.
+        @BR20240313 Added the preproc_signals_root_folder parameter to the class.
         """
 
         # TODO ask Moro for these values & modify them
         #  These values should be declared somewhere globally like in a class of some sort.
 
-        # TODO in_signal_path and out_signals_root_folder should be
+        # TODO in_signal_path and preproc_signals_root_folder should be
         #  declared somewhere globally like in a class of some sort.
         # normalization values
         self.dbgain_min = -40
@@ -614,7 +614,9 @@ class SignalProcessor:
                     # subtract the features
                     diff_features = features_in_signal - features_crt_reference_signal
                 print(f"--- {debugger_details()} diff_features shape: {diff_features} ---")
-                print("difference between signals =", self.signal - crt_signal)
+                print("difference between signals =", self.signal - crt_signal) #2024-03-29 BUG MFCC
                 # save the features with the metadata:
-                np.save(output_file_path, (diff_features, list_normed_params))  # saves tuple of features and params
+                # np.save(output_file_path, (diff_features, list_normed_params))  # saves tuple of features and params
+
+        asdf # intentionally added for code to crash here
 
