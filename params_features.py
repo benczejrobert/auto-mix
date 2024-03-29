@@ -2,7 +2,7 @@ from params_preproc import *
 # Extracted features with diff because MFCCs are equal for the 2 signals. On the diff they are non-zero, so basically MFCC(diff) != diff(MFCCs)
 
 # Feature extractor
-extracted_features_folder = r"../features-latest"
+extracted_features_folder = r"../data/features-latest"
 
 feature_dict = {'sr': sample_rate, 'n_fft': 4096*4, 'n_mfcc': 26, 'hop_length': 512, 'margin': 3.0, 'n_lvls':5,'wavelet_type':'db1'}
 feature_list = ['mfcc'] # ['spect', 'mel_spect']
