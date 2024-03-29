@@ -1,3 +1,6 @@
+Folder with data: https://drive.google.com/drive/folders/18j7PVTl0-DfWDNRXMmLzGaBgetMfpfJh
+
+
 # Automatic drum mixing using deep learning
 
 This is an ongoing project aims to create a drum mixing tool using deep learning. 
@@ -10,4 +13,5 @@ The overall architecture of the tool is as follows:
     The preprocessor also loads the parameters and scales them to a convenient range for the model
     - feature extractor: extracts features from the processed tracks
     - model: takes the features as input and outputs the suggested parameters
-    
+
+
