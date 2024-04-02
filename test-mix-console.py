@@ -35,7 +35,8 @@ from params_features import *
 
 # input_sig <-> output&metadata
 
-
+# TODO when multiple channels will be added aas will need to have its params reset: sig_path, features_folder and
+#  processed_signals_root_folder
 aas = SignalProcessor(sig_path, dict_norm_values=dict_normalization_values, resample_to=sample_rate,
                       features_folder=extracted_features_folder,
                       processed_signals_root_folder=preproc_signals_root_folder)
@@ -45,21 +46,6 @@ aas = SignalProcessor(sig_path, dict_norm_values=dict_normalization_values, resa
 # Pipeline steps params
 proc_end_to_end = False
 create_training_features = True
-
-# feature_dict = {'sr': sample_rate, 'n_fft': 4096*4, 'n_mfcc': 26, 'hop_length': 512, 'margin': 3.0, 'n_lvls':5,'wavelet_type':'db1'}
-# feature_list = ['mfcc'] # ['spect', 'mel_spect']
-# variance_type = 'smad'  #[string], type of variance, either 'var' or 'smad'
-# raw_features = True #[bool] if True, skips mean and var extraction from the audio features in the feature list
-# keep_feature_dims = True #[bool] if True, do not reduce individual features' dimensions to 1D shape. Only useful if raw_features is True
-
-# feats_extractor = FeatureExtractor(feature_list, feature_dict, variance_type,raw_features,keep_feature_dims)
-# # print feats_extractor attributes
-# proc_end_to_end = False
-# create_training_features = True
-# param_pre_diff = True # this parameter specifies if the difference is made before or after the features are extracted.
-#                     # if True, the features are extracted from the diff. if False, the diff is made from the features.
-
-
 
 if proc_end_to_end:
     today = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
@@ -72,7 +58,8 @@ if proc_end_to_end:
     # to use all possible combinations of filters, any number of filters.
     no_filters = len(dict_all_filter_settings)
 
-    # aas._create_all_proc_vars_combinations()
+    # TODO when multiple channels will be added, the processing will iterate through
+    #  the list of dict_all_filter_settings in params_preproc.py
     dict_filenames_and_process_variants = aas.create_end_to_end_all_proc_vars_combinations(dict_all_filter_settings,
                                                                                            root_filename="eq_ed",
                                                                                            start_index=0,
@@ -95,5 +82,3 @@ if create_training_features:
 # aas.process_signal_all_variants(signal_in, {test_fname: dict_filenames_and_process_variants[test_fname]})
 # training_data = aas.load_labels_metadata_for_training(preproc_signals_root_folder)
 # path = r'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'
-
-

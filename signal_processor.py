@@ -17,6 +17,22 @@ class SignalProcessor:
         @BR20240313 Added the preproc_signals_root_folder parameter to the class.
         """
 
+        self.reset_instance_params(in_signal_path, dict_norm_values, processed_signals_root_folder,
+                                   features_folder, resample_to)
+
+    def reset_instance_params(self, in_signal_path, dict_norm_values, processed_signals_root_folder=r"../processed-audio-latest",
+                 features_folder=r"../features-latest", resample_to=None):
+
+        """
+        This function creates a SignalProcessor class instance for a single signal.
+
+        :param features_folder:
+        :param in_signal_path:
+        :param resample_to:
+        @BR20240309 Added the rate parameter and self signal to the class.
+        @BR20240313 Added the preproc_signals_root_folder parameter to the class.
+        """
+
         # TODO ask Moro for these values & modify them
         #  These values should be declared somewhere globally like in a class of some sort.
 
@@ -25,12 +41,6 @@ class SignalProcessor:
         # normalization values
         for key, value in dict_norm_values.items():
             setattr(self, key, value)
-        # self.dbgain_min = -40
-        # self.dbgain_max = 40
-        # self.freq_min = 20
-        # self.freq_max = 20000
-        # self.resonance_min = 0
-        # self.resonance_max = 10
 
         # paths
         self.in_signal_path = in_signal_path
@@ -40,7 +50,7 @@ class SignalProcessor:
         # signal and rate
         self.signal, self.rate = librosa.load(in_signal_path, sr=resample_to)
         # create filters list basically reset the filters
-        self.reset()
+        self.reset_filters()
 
         # create the output folder if it doesn't exist
         if not os.path.exists(self.out_signals_root_folder):
@@ -99,7 +109,7 @@ class SignalProcessor:
                 print(f"For file at {file_path}, tags are:", song.tags)
             return song.tags
 
-    def reset(self):
+    def reset_filters(self):
         self.filters = []
 
     ###############################>> create_end_to_end_all_proc_vars_combinations <<##################################
@@ -387,7 +397,7 @@ class SignalProcessor:
         signal_out = pv_signal_in.copy()
         for f in self.filters:
             f.process(signal_out, signal_out)
-        self.reset()  # after signal variant was processed, reset
+        self.reset_filters()  # after signal variant was processed, reset
         return signal_out
 
     ######################################>> process_signal_all_variants <<############################################
