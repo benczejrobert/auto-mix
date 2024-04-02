@@ -1,6 +1,40 @@
 from imports import *
 
 
+def IFFT(W_signal, l):
+    """
+    Arguments:
+
+    W_signal: an array containing the FFT of each window, of size #windows x N_fft
+    l: length of each window in the output array of windows
+    Outputs:
+
+    w_signal: an array of windows from a signal, of size #windows x window_length
+    """
+    try:
+        w_signal = np.fft.ifft(W_signal, W_signal.shape[-1], axis=-1)[:, 0:l]
+    except:
+        w_signal = np.fft.ifft(W_signal, W_signal.shape[-1], axis=-1)[0:l]
+    return w_signal
+
+
+def utils_cepstrum(w_signal, N_fft):
+    """
+    Uses FFT, IFFT and log functions to calculate the Cepstrum
+    """
+
+    window_length = np.shape(w_signal)[-1]
+    try:
+        interm = amplitude(FFT(w_signal, N_fft))
+        interm = 0.001 * np.float64(interm == 0) + interm
+        C = IFFT(np.log(interm), N_fft)[:, 0:window_length]
+    except:
+        interm = amplitude(FFT(w_signal, N_fft))
+        interm = 0.001*np.float64(interm==0) + interm
+        C = IFFT(np.log(interm), N_fft)[0:window_length]
+
+    return C.real
+
 def create_model(data = np.array([[[1,2,3],[1,2,3]]]), no_classes = 3, optimizer = 'adam', dropout_rate=0.5, summary=True): #_initial
     inshape = list(data.shape)[1::]
     input = Input(shape=inshape)
