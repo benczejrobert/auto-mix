@@ -593,10 +593,10 @@ class SignalProcessor:
             # load the processed signals
             if crt_file.endswith(".wav"):
                 crt_file_path = os.path.join(processed_audio_folder, crt_file)
-                print(f"{debugger_details()} crt_file_path", crt_file_path)
+                # print(f"{debugger_details()} crt_file_path", crt_file_path)
                 crt_signal, rate = librosa.load(crt_file_path, sr=self.rate)
                 metadata = self.read_metadata(crt_file_path)
-                print(f"{debugger_details()} metadata for sound crt_file", crt_file,':', metadata, " ---")
+                # print(f"{debugger_details()} metadata for sound crt_file", crt_file,':', metadata, " ---")
                 list_normed_params = (self._normalize_params(metadata))
                 # difference before features extracted
                 if pre_diff:
@@ -613,10 +613,10 @@ class SignalProcessor:
                     features_crt_reference_signal = obj_feature_extractor.extract_features(crt_signal)
                     # subtract the features
                     diff_features = features_in_signal - features_crt_reference_signal
-                print(f"--- {debugger_details()} diff_features shape: {diff_features} ---")
-                print("difference between signals =", self.signal - crt_signal) #2024-03-29 BUG MFCC
+                # print(f"--- {debugger_details()} diff_features shape: {diff_features} ---")
+                # print("difference between signals =", self.signal - crt_signal) #TODO 2024-03-29 solve BUG MFCC - not present for cepstrum or fft
                 # save the features with the metadata:
-                # np.save(output_file_path, (diff_features, list_normed_params))  # saves tuple of features and params
+                np.save(output_file_path, (diff_features, list_normed_params))  # saves tuple of features and params
 
-        asdf # intentionally added for code to crash here
+        # asdf # intentionally added for code to crash here
 
