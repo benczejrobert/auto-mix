@@ -36,7 +36,9 @@ from params_features import *
 # input_sig <-> output&metadata
 
 
-aas = SignalProcessor(sig_path, resample_to=sample_rate, features_folder=extracted_features_folder, processed_signals_root_folder=preproc_signals_root_folder)
+aas = SignalProcessor(sig_path, dict_norm_values=dict_normalization_values, resample_to=sample_rate,
+                      features_folder=extracted_features_folder,
+                      processed_signals_root_folder=preproc_signals_root_folder)
 # TODO update the FeatureExtractor class and make it more dynamic. Also update the files in Features_Functions folder
 
 
@@ -93,3 +95,5 @@ if create_training_features:
 # aas.process_signal_all_variants(signal_in, {test_fname: dict_filenames_and_process_variants[test_fname]})
 # training_data = aas.load_labels_metadata_for_training(preproc_signals_root_folder)
 # path = r'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'
+
+

@@ -4,7 +4,7 @@ class SignalProcessor:
         This class is used to process signals with various filters and save the processed signals with metadata.
     """
 
-    def __init__(self, in_signal_path, processed_signals_root_folder=r"../processed-audio-latest",
+    def __init__(self, in_signal_path, dict_norm_values, processed_signals_root_folder=r"../processed-audio-latest",
                  features_folder=r"../features-latest", resample_to=None):
 
         """
@@ -23,12 +23,14 @@ class SignalProcessor:
         # TODO in_signal_path and preproc_signals_root_folder should be
         #  declared somewhere globally like in a class of some sort.
         # normalization values
-        self.dbgain_min = -40
-        self.dbgain_max = 40
-        self.freq_min = 20
-        self.freq_max = 20000
-        self.resonance_min = 0
-        self.resonance_max = 10
+        for key, value in dict_norm_values.items():
+            setattr(self, key, value)
+        # self.dbgain_min = -40
+        # self.dbgain_max = 40
+        # self.freq_min = 20
+        # self.freq_max = 20000
+        # self.resonance_min = 0
+        # self.resonance_max = 10
 
         # paths
         self.in_signal_path = in_signal_path

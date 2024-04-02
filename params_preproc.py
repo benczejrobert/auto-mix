@@ -17,7 +17,10 @@ dict_all_filter_settings = {
     "high_shelf": {"cutoff": [9000], "resonance": [2], "dbgain": [0]}
 }
 
-
-
-
+dict_normalization_values = { "dbgain_min": -40,
+                              "dbgain_max": 40,
+                              "freq_min": 20,
+                              "freq_max": 20000,
+                              "resonance_min": 0,
+                              "resonance_max": 10}
 
