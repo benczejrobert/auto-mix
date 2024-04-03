@@ -4,6 +4,7 @@ from feature_extractor import *
 ## import run parameters from the params files
 from signal_processor import *
 from params_features import *
+from split_dataset import *
 # exec(open("params_preproc.py", 'r').read())
 # exec(open("params_features.py", 'r').read())
 
@@ -45,18 +46,12 @@ aas = SignalProcessor(sig_path, dict_norm_values=dict_normalization_values, resa
 
 # Pipeline steps params
 proc_end_to_end = False
-create_training_features = True
+create_training_features = False
+split = True
+split_perc_train = 70
 
 if proc_end_to_end:
     today = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
-    # Usage tips: You need to add numbers at the end of every signal processing type, because
-    # you can have multiple of the same type such as peak1, peak2, peak3 etc. - always name them with numbers at the end
-
-    # Usage tips: include dbgain 0 if you want to ignore a certain type of filter OR remove it from the below dict.
-
-    # Change this to the number of filters you want to use or None
-    # to use all possible combinations of filters, any number of filters.
-    no_filters = len(dict_all_filter_settings)
 
     # TODO when multiple channels will be added, the processing will iterate through
     #  the list of dict_all_filter_settings in params_preproc.py
@@ -66,7 +61,8 @@ if proc_end_to_end:
                                                                                            end_index=None,
                                                                                            number_of_filters=no_filters)
     aas.process_signal_all_variants(dict_filenames_and_process_variants) # TODO maybe add run date to the metadata or name of the processed signals
-    shutil.copyfile("params_preproc.py", os.path.join(preproc_signals_root_folder, f"params-preproc-{today}.txt"))
+    # TODO save the .txt elsewhere to avoid messing with the correctness of the test train split
+    copyfile("params_preproc.py", os.path.join(preproc_signals_root_folder, f"params-preproc-{today}.txt"))
     # for d in dict_filenames_and_process_variants:
     #     print("file name in dict_filenames_and_process_variants", d, '-----')
     #     print(len(set(dict_filenames_and_process_variants[d].keys())))
@@ -77,8 +73,11 @@ if create_training_features:
 
     aas.create_features_diff_for_training(obj_feature_extractor=feats_extractor,
                                           processed_audio_folder=preproc_signals_root_folder, pre_diff=param_pre_diff, process_entire_signal=True)
-    shutil.copyfile("params_features.py", os.path.join(extracted_features_folder, f"params-features-{today}.txt"))
+    # TODO save the .txt elsewhere to avoid messing with the correctness of the test train split
+    copyfile("params_features.py", os.path.join(extracted_features_folder, f"params-features-{today}.txt"))
 
 # aas.process_signal_all_variants(signal_in, {test_fname: dict_filenames_and_process_variants[test_fname]})
 # training_data = aas.load_labels_metadata_for_training(preproc_signals_root_folder)
 # path = r'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'
+if split:
+    split_dataset(extracted_features_folder, split_perc_train)
