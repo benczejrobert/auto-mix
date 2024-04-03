@@ -1,16 +1,16 @@
-import numpy as np
-from scipy.signal import windows
-import matplotlib.pyplot as plt  # FIXME
-import pywt  # FIXME
-from scipy.io import wavfile
-from inspect import currentframe, getframeinfo, stack
-
 import os
-
 import time
 import re
-from shutil import rmtree, copy, copyfile
+import pywt  # FIXME
+import matplotlib.pyplot as plt  # FIXME
 import tensorflow as tf
+import numpy as np
+from scipy.signal import windows
+
+from scipy.io import wavfile
+from inspect import currentframe, getframeinfo, stack
+from shutil import rmtree, copy, copyfile
+
 # python interp uses and runs C:/Users/FlRE_DEATH/anaconda3/envs/py310tg210gpu/lib/site-packages/keras/api/_v2/keras/
 # but inspector uses C:\Users\FlRE_DEATH\anaconda3\envs\py310tg210gpu\Lib\site-packages\tensorflow\python
 # from tensorflow.keras import Model, Sequential
