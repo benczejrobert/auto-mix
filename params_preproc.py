@@ -5,12 +5,18 @@ small_no = 1e-320 # delay for unicity of timestamps
 # sig_path = r'D:/PCON/Disertatie/AutoMixMaster/datasets/diverse-test/white-noise-mono.wav'
 # sig_path = r'D:/PCON/Disertatie/AutoMixMaster/datasets/diverse-test/resampled_white_noise.wav'
 # TODO when multiple channels will be added, sig_path will point to a folder with multiple signals
-sig_path = r'../data/resampled_white_noise.wav'
+sig_path = r'../data/raw-audio/resampled_white_noise.wav'
 # sig_path = r'D:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise-reaper-generated.wav'
+
+# todo here will be a subfolder structure for each drum channel
 preproc_signals_root_folder = r"../data/processed-audio-latest"
 sample_rate = 22050
 # TODO when multiple channels will be added, this dict can be added to a list of dicts, one for each channel
 
+# Usage tips: You need to add numbers at the end of every signal processing type, because
+# you can have multiple of the same type such as peak1, peak2, peak3 etc. - always name them with numbers at the end
+
+# Usage tips: include dbgain 0 if you want to ignore a certain type of filter OR remove it from the below dict.
 
 dict_all_filter_settings = {
     "high_pass": {"cutoff": range(200, 201, 1000), "resonance": range(2, 3)},
@@ -28,3 +34,6 @@ dict_normalization_values = { "dbgain_min": -40,
                               "resonance_min": 0,
                               "resonance_max": 10}
 
+# Change this to the number of filters you want to use or None
+# to use all possible combinations of filters, any number of filters.
+no_filters = len(dict_all_filter_settings)
