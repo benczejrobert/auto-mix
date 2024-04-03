@@ -1,6 +1,94 @@
 from imports import *
 
 
+class MultiDim_MinMaxScaler():
+    def __init__(self):
+        self.min = None
+        self.max = None
+    def fit(self, x):  # extracts min/max from the data or whatever needed for scaling
+        if not isinstance(x,type(np.array([1,2,3]))):
+            x = np.array(x)
+        self.min = np.min(x)
+        self.max = np.max(x)
+    def transform(self,x): # scales its input to whatever min/max was extracted via fit()
+        if not isinstance(x,type(np.array([1,2,3]))):
+            x = np.array(x)
+        x = x+np.abs(self.min)
+        self.max+=+np.abs(self.min)
+        return x/self.max
+
+class MultiDim_MaxAbsScaler(): #if not in use modify name to end with _vertical
+    #this scales everything vertically
+    def __init__(self):
+        self.maxabs = None
+    def fit(self,x):  # extracts min/max from the data or whatever needed for scaling
+        if not isinstance(x,type(np.array([1,2,3]))):
+            x = np.array(x)
+        y = np.concatenate(x,axis=0)
+        self.maxabs = np.max(np.abs(y),axis=0)
+    def transform(self,x): # scales its input to whatever min/max was extracted via fit()
+        if not isinstance(x,type(np.array([1,2,3]))):
+            x = np.array(x)
+        return x/self.maxabs
+
+class MultiDim_MaxAbsScaler_orig():  #if not in use modify name to end with _original
+    def __init__(self):
+        self.maxabs = None
+    def fit(self,x):  # extracts min/max from the data or whatever needed for scaling
+        if not isinstance(x,type(np.array([1,2,3]))):
+            x = np.array(x)
+        self.maxabs = np.max(np.abs(x))
+    def transform(self,x): # scales its input to whatever min/max was extracted via fit()
+        if not isinstance(x,type(np.array([1,2,3]))):
+            x = np.array(x)
+        return x/self.maxabs
+
+
+def compute_scaler(tfrecord, with_mean=True, scaler_type='maxabs'):
+    """
+    Computes the scaler on the entire database.
+
+    Arguments:
+        - tfrecord - NOT USED - [boolean], if true, reads data from TFRecord files, else from .npy files
+        - scaler_type [string] can be 'standard', 'minmax', 'maxabs'
+    Output:
+        - scaler [a fitted sklearn.preprocessing scaler]
+        Can be Standard -> [mean - 3*sigma, mean + 3*sigma] , MinMax -> default [0,1]  or MaxAbs -> [-1,1]
+    """
+    X = []
+    if scaler_type not in ['standard', 'minmax', 'maxabs']:
+        print("Please select scaler_type from: 'standard', 'minmax', 'maxabs' ")
+        sys.exit()
+    if scaler_type == 'standard':
+        scaler = StandardScaler(
+            with_mean=with_mean)  # -> not just a maxabs +/-3, also modifies the distribution to Gauss
+    if scaler_type == 'minmax':
+        scaler = MinMaxScaler()  # -> does indeed [0,1]. BUT requires individual feature vectors of max. 1D shape
+    if scaler_type == 'maxabs':
+        scaler = MaxAbsScaler()  # -> does indeed [-1,1]
+
+    paths = [os.path.join('..', 'Train'), os.path.join('..', 'Test')]
+    for path in paths:
+        pathology_folders = sorted(os.listdir(path))
+        for pathology in pathology_folders:
+            files = sorted(os.listdir(os.path.join(path, pathology)))
+            for file in files:
+                npy = np.load(os.path.join(path, pathology, file))
+                try:
+                    if len(npy[0].shape) >= 2:  # if 1st element is not a vector or a scalar
+                        if scaler_type == 'minmax':
+                            scaler = MultiDim_MinMaxScaler()
+                        else:
+                            scaler = MultiDim_MaxAbsScaler()  # if standard scale or maxabs [-1,1]
+                except:  # 1st element is a scalar, scalars have no len()
+                    pass
+                X.extend(npy)
+
+    scaler.fit(X)
+
+    return scaler
+
+
 def IFFT(W_signal, l):
     """
     Arguments:
