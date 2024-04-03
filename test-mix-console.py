@@ -5,6 +5,7 @@ from feature_extractor import *
 from signal_processor import *
 from params_features import *
 from split_dataset import *
+from k_fold_cross_validation import *
 # exec(open("params_preproc.py", 'r').read())
 # exec(open("params_features.py", 'r').read())
 
@@ -47,8 +48,23 @@ aas = SignalProcessor(sig_path, dict_norm_values=dict_normalization_values, resa
 # Pipeline steps params
 proc_end_to_end = False
 create_training_features = False
-split = True
+split = False
 split_perc_train = 70
+
+# Arguments for k_fold_cross_validation (train)
+train = False
+k_fold_path = os.path.join('..', 'Train')  #[path], relative path to Train folder
+k = len(get_class_list(db_path))  #[int], number of folds to be performed
+batch_size = 1024  #[int], size of batch in examples (windows)
+shuffle_buffer = 3 * batch_size  #[int], size of the buffer used to shuffle the data
+epochs = 530 #130  #[int], number of epochs to be performed during training
+
+#epochs were 130, 530, 1030, 2030. nu paresa mai scada din loss deloc de la epoca 500 ish
+
+optimizer = 'adam'  #[string or tensorflow.keras.optimizers], optimizer to be used
+dropout = 0.5  #[float], between 0 and 1. Fraction of the input units to drop
+
+
 
 if proc_end_to_end:
     today = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
@@ -81,3 +97,10 @@ if create_training_features:
 # path = r'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'
 if split:
     split_dataset(extracted_features_folder, split_perc_train)
+
+if train:
+    if scaler == None:
+        scaler = compute_scaler(None)
+    train_cardinality = None
+    k_fold_cross_validation(k_fold_path, k, path_model, tfrecord, train_cardinality, batch_size, shuffle_buffer,
+                            epochs, optimizer, dropout, scaler, shuffle_mode)
