@@ -20,6 +20,16 @@ class SignalProcessor:
         self.reset_instance_params(in_signal_path, dict_norm_values, processed_signals_root_folder,
                                    features_folder, resample_to)
 
+    def _load_signal(self, in_signal_path, resample_to):
+        """
+        This function loads the signal from the specified path and resamples it to the specified rate.
+        :param in_signal_path:
+        :param resample_to:
+        :return:
+        """
+        self.signal, self.rate = librosa.load(in_signal_path, sr=resample_to)
+
+
     def reset_instance_params(self, in_signal_path, dict_norm_values, processed_signals_root_folder="..\\processed-audio-latest",
                  features_folder="..\\features-latest", resample_to=None):
 
@@ -31,6 +41,7 @@ class SignalProcessor:
         :param resample_to:
         @BR20240309 Added the rate parameter and self signal to the class.
         @BR20240313 Added the preproc_signals_root_folder parameter to the class.
+        @BR20240406 Modified in_signal_path to be a folder path or a file path.
         """
 
         # TODO ask Moro for these values & modify them
@@ -44,17 +55,22 @@ class SignalProcessor:
 
         # paths
         self.in_signal_path = in_signal_path
-        self.out_signals_root_folder = processed_signals_root_folder
+        self.processed_signals_root_folder = processed_signals_root_folder
         self.features_folder = features_folder
+        self.resample_to = resample_to
 
-        # signal and rate
-        self.signal, self.rate = librosa.load(in_signal_path, sr=resample_to)
+        # signal and rate of 1st signal in the folder
+        if os.path.isfile(in_signal_path):
+            self._load_signal(in_signal_path, resample_to)
+        else:
+            self._load_signal(os.path.join(in_signal_path,os.listdir(in_signal_path)[0]),resample_to)
+
         # create filters list basically reset the filters
         self.reset_filters()
 
         # create the output folder if it doesn't exist
-        if not os.path.exists(self.out_signals_root_folder):
-            os.mkdir(self.out_signals_root_folder)
+        if not os.path.exists(self.processed_signals_root_folder):
+            os.mkdir(self.processed_signals_root_folder)
         if not os.path.exists(self.features_folder):
             os.mkdir(self.features_folder)
         if self.rate is None:
@@ -466,13 +482,65 @@ class SignalProcessor:
         return list_out_params
 
     #########################################>> load_data_for_training <<##############################################
+    def process_signal_all_variants(self, in_signal_path, asv_dict_filenames_and_process_variants, normalize=True,
+                                    verb_start=False, verb_final=False):
+        """
+        This function processes the input sig with all the processings in the asv_dict_filenames_and_process_variants.
+        This function that calls _process_signal_variant multiple times by iterating a dict of dicts.
+        # A processing list is a dict of
+        { filename(s): {filter_type_name(s): {param_name(s): value(s), ...}, ... }, ... }
+        # This function will output the processed signal with a log of all the processing it went through
+        # the name of the signal will be like base_name_[index].wav
+
+        :param asv_dict_filenames_and_process_variants:
+        :param normalize:
+        :param verb_start:
+        :param verb_final:
+        :return:
+
+        @BR20240309 Added the normalize parameter to the function signature.
+        Also removed the asv_signal_in parameter and instead called from self.
+        @BR20240319 Added the verb_start and verb_final parameters to the function signature.
+        @BR20240406 Added in_signal_path to the function signature.
+        """
+
+        for str_file_ending in asv_dict_filenames_and_process_variants:
+            # last e - unprocessed input signal name
+            str_unproc_sig_name = in_signal_path.split(os.sep)[-1].split(".")[0]
+            procvars_folder_name = str_unproc_sig_name
+            # sig_ext not used because .wav is in the so-called pre_extension
+            # sig_ext = self.in_signal_path.split(os.sep)[-1].split(".")[-1]  # last e - signal extension
+            crt_procvars_folder = os.sep.join([self.processed_signals_root_folder, procvars_folder_name])
+            if not os.path.exists(crt_procvars_folder):
+                os.mkdir(crt_procvars_folder)
+
+            crt_file_name = "_".join([str_unproc_sig_name,
+                                                   str_file_ending])
+            print(f"process_signal_all_variants() Processing signal {crt_file_name}...")
+            crt_file_path = os.sep.join([crt_procvars_folder,
+                                         crt_file_name])
+            # for filter_type in dict_filenames_and_process_variants[filename]: # added
+            np_arr_out_sig = self._process_signal_variant(self.signal, asv_dict_filenames_and_process_variants[
+                str_file_ending])  # signal_in -> out_sig
+            if normalize:
+                np_arr_out_sig = normalization(np_arr_out_sig)
+
+            sf.write(crt_file_path, np_arr_out_sig, self.rate)
+
+            reset = True
+            for filter_type in asv_dict_filenames_and_process_variants[str_file_ending]:
+                # write signal to disk using metadata as well. write metadata one by one
+                self.write_metadata(crt_file_path, filter_type,
+                                    str(asv_dict_filenames_and_process_variants[str_file_ending][filter_type]),
+                                    reset, verb_start, verb_final)
+                reset = False
 
     def create_end_to_end_all_proc_vars_combinations(self, dict_param_names_and_ranges, root_filename="eq-ed",
                                                      start_index=0, end_index=None, number_of_filters=None,
                                                      sr_threshold=44100):
         """
         This function creates all possible combinations of filter settings and outputs them as a dict of filenames.
-
+        If the sample rate is below the sr_threshold, the high shelf and low pass filters will not be used.
 
         :rtype: dict
         :param dict_param_names_and_ranges: dict of all possible filter settings - values
@@ -517,50 +585,48 @@ class SignalProcessor:
                             f"({len(dict_param_names_and_ranges)}) does not match "
                             f"the number_of_filters ({number_of_filters}).")
 
-    def process_signal_all_variants(self, asv_dict_filenames_and_process_variants, normalize=True, verb_start=False, verb_final=False):
+    def process_multiple_signals(self,list_settings_dict, threads = False):
         """
-        This function processes the input sig with all the processings in the asv_dict_filenames_and_process_variants.
-        This function that calls _process_signal_variant multiple times by iterating a dict of dicts.
-        # A processing list is a dict of
-        { filename(s): {filter_type_name(s): {param_name(s): value(s), ...}, ... }, ... }
-        # This function will output the processed signal with a log of all the processing it went through
-        # the name of the signal will be like base_name_[index].wav
-
-        :param asv_dict_filenames_and_process_variants:
-        :param normalize:
-        :param verb_start:
-        :param verb_final:
+        This function processes multiple signals with multiple filter settings.
+        These signals can be found in the root folder of the raw signals.
+        :param list_settings_dict:
+        :param threads:
         :return:
-
-        @BR20240309 Added the normalize parameter to the function signature.
-        Also removed the asv_signal_in parameter and instead called from self.
-        @BR20240319 Added the verb_start and verb_final parameters to the function signature.
         """
+        # iterate all the signals in the folder, self.signal will be different at every iteration
+        # every input signal will have a corresponding dict of filter settings
+        # that will be unraveled with create_end_to_end_all_proc_vars_combinations.
 
-        for str_file_pre_extension in asv_dict_filenames_and_process_variants:
-            # last e - unprocessed input signal name
-            str_unproc_sig_name = self.in_signal_path.split(os.sep)[-1].split(".")[0]
-            # sig_ext not used because .wav is in the so-called pre_extension
-            # sig_ext = self.in_signal_path.split("os.sep")[-1].split(".")[-1]  # last e - signal extension
-            crt_file_path = "os.sep".join([self.out_signals_root_folder,
-                                       "_".join([str_unproc_sig_name,
-                                                 str_file_pre_extension])])
-            # for filter_type in dict_filenames_and_process_variants[filename]: # added
-            np_arr_out_sig = self._process_signal_variant(self.signal, asv_dict_filenames_and_process_variants[
-                str_file_pre_extension])  # signal_in -> out_sig
-            if normalize:
-                np_arr_out_sig = normalization(np_arr_out_sig)
+        #
+        today = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
+        signal_paths = os.listdir(self.in_signal_path)
+        #  Associate the path of the signal with the filter settings. The signal folder is the key.
+        try:
+            signal_procs = dict((np.array((signal_paths, list_settings_dict)).T))
+        except Exception as e:
+            raise Exception(f"--- {debugger_details()} Error in associating the signal with the filter settings. ---\n"
+                            f"--- Error: {e} ---")
+        for crt_signal_folder in signal_procs.keys():
+            print(f"--- {debugger_details()} Processing signal: {crt_signal_folder} ---")
+            print(f"--- {debugger_details()} Filter settings: {signal_procs[crt_signal_folder]} ---")
+            dict_all_filter_settings = signal_procs[crt_signal_folder]
+            crt_signal_path = os.path.join(self.in_signal_path, crt_signal_folder)
+            # load current signal
+            self._load_signal(crt_signal_path, self.resample_to)
+            no_filters = len(dict_all_filter_settings)
 
-            sf.write(crt_file_path, np_arr_out_sig, self.rate)
+            # TODO when multiple channels will be added, the processing will iterate through
+            #  the list of list_dict_all_filter_settings in params_preproc.py
+            dict_filenames_and_process_variants = self.create_end_to_end_all_proc_vars_combinations(dict_all_filter_settings,
+                                                                                                    root_filename="eq_ed",
+                                                                                                    start_index=0,
+                                                                                                    end_index=None,
+                                                                                                    number_of_filters=no_filters)
+            # TODO maybe add run date to the metadata or name of the processed signals
+            self.process_signal_all_variants(crt_signal_path, dict_filenames_and_process_variants)
 
-            reset = True
-            for filter_type in asv_dict_filenames_and_process_variants[str_file_pre_extension]:
-                # write signal to disk using metadata as well. write metadata one by one
-                self.write_metadata(crt_file_path, filter_type,
-                                    str(asv_dict_filenames_and_process_variants[str_file_pre_extension][filter_type]),
-                                    reset, verb_start, verb_final)
-                reset = False
-
+        # copy the params for all channels to the processed signals folder
+        copyfile("params_preproc.py", os.path.join(self.processed_signals_root_folder, f"params-preproc-{today}.txt"))
     def load_labels_metadata_for_training(self, training_data_folder):
         """
         This function loads the metadata from the processed signals and normalizes it based on the param limits
@@ -588,7 +654,7 @@ class SignalProcessor:
         return list_all_metadata
 
 
-    def create_features_diff_for_training(self, obj_feature_extractor, processed_audio_folder, pre_diff=True, process_entire_signal = True):
+    def create_features_diff_for_training_single_signal(self, processed_audio_folder, obj_feature_extractor, pre_diff=True, process_entire_signal = True):
         """
             This function loads the processed signals and extracts the features from them.
             :param obj_feature_extractor: [FeatureExtractor]
@@ -597,9 +663,13 @@ class SignalProcessor:
                                 extract the features. Otherwise, it will make a difference between the features.
             :param process_entire_signal: [bool] does not window the input signal in librosa's 2D transformations
             :return: [list] of [np.ndarray] with the features for each signal
+
+            @BR20240406 Added for loop to process channel subfolders in the processed_signals_root_folder.
+            @BR20240406 Removed processed_audio_folder parameter to the function signature because it's on the self.
         """
         if process_entire_signal:
             obj_feature_extractor.features_dict["hop_length"] = len(self.signal) + 1
+
         for crt_file in sorted(os.listdir(processed_audio_folder)):
             print(f"--- Creating training features for: {crt_file} ---")
             # load the processed signals
@@ -631,4 +701,13 @@ class SignalProcessor:
                 np.save(output_file_path, (diff_features, list_normed_params))  # saves tuple of features and params
 
         # asdf # intentionally added for code to crash here
-
+    def create_features_diff_for_training(self, inst_feature_extractor, bool_pre_diff=True, bool_process_entire_signal = True):
+        if os.path.isfile(os.listdir(self.processed_signals_root_folder)[0]):
+            self.create_features_diff_for_training_single_signal(self.processed_signals_root_folder, inst_feature_extractor, pre_diff, process_entire_signal)
+        else:
+            for crt_folder in sorted(os.listdir(self.processed_signals_root_folder)):
+                processed_signals_crt_folder = os.path.join(self.processed_signals_root_folder, crt_folder)
+                if not os.path.exists(processed_signals_crt_folder):
+                    os.mkdir(processed_signals_crt_folder)
+                self.create_features_diff_for_training_single_signal(processed_signals_crt_folder,inst_feature_extractor,
+                                                                     bool_pre_diff, bool_process_entire_signal)
