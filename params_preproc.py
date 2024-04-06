@@ -2,14 +2,14 @@ small_no = 1e-320 # delay for unicity of timestamps
 
 # Signal (pre)processor
 
-# sig_path = r'D:/PCON/Disertatie/AutoMixMaster/datasets/diverse-test/white-noise-mono.wav'
-# sig_path = r'D:/PCON/Disertatie/AutoMixMaster/datasets/diverse-test/resampled_white_noise.wav'
+# sig_path = "D:\\PCON\\Disertatie\\AutoMixMaster\\datasets\\diverse-test\\white-noise-mono.wav"
+# sig_path = "D:\\PCON\\Disertatie\\AutoMixMaster\\datasets\\diverse-test\\resampled_white_noise.wav"
 # TODO when multiple channels will be added, sig_path will point to a folder with multiple signals
-sig_path = r'../data/raw-audio/resampled_white_noise.wav'
-# sig_path = r'D:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise-reaper-generated.wav'
+sig_path = "..\\data\\raw-audio\\resampled_white_noise.wav"
+# sig_path = "D:\\PCON\\Disertatie\\AutoMixMaster\\datasets\\diverse-test\\white-noise-reaper-generated.wav"
 
 # todo here will be a subfolder structure for each drum channel
-preproc_signals_root_folder = r"../data/processed-audio-latest"
+preproc_signals_root_folder = "..\\data\\processed-audio-latest"
 sample_rate = 22050
 # TODO when multiple channels will be added, this dict can be added to a list of dicts, one for each channel
 

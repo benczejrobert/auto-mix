@@ -3,7 +3,7 @@ from params_preproc import *
 
 # Feature extractor
 # todo here will be a subfolder structure for each drum channel
-extracted_features_folder = r"../data/features-latest"
+extracted_features_folder = "..\\data\\features-latest"
 
 feature_dict = {'sr': sample_rate, 'n_fft': 4096*4, 'n_mfcc': 26, 'hop_length': 512, 'margin': 3.0, 'n_lvls':5,'wavelet_type':'db1'}
 # feature_list = ['mfcc'] # ['spect', 'mel_spect']
