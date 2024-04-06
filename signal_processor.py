@@ -4,8 +4,8 @@ class SignalProcessor:
         This class is used to process signals with various filters and save the processed signals with metadata.
     """
 
-    def __init__(self, in_signal_path, dict_norm_values, processed_signals_root_folder=r"../processed-audio-latest",
-                 features_folder=r"../features-latest", resample_to=None):
+    def __init__(self, in_signal_path, dict_norm_values, processed_signals_root_folder="..\\processed-audio-latest",
+                 features_folder="..\\features-latest", resample_to=None):
 
         """
         This function creates a SignalProcessor class instance for a single signal.
@@ -20,8 +20,8 @@ class SignalProcessor:
         self.reset_instance_params(in_signal_path, dict_norm_values, processed_signals_root_folder,
                                    features_folder, resample_to)
 
-    def reset_instance_params(self, in_signal_path, dict_norm_values, processed_signals_root_folder=r"../processed-audio-latest",
-                 features_folder=r"../features-latest", resample_to=None):
+    def reset_instance_params(self, in_signal_path, dict_norm_values, processed_signals_root_folder="..\\processed-audio-latest",
+                 features_folder="..\\features-latest", resample_to=None):
 
         """
         This function creates a SignalProcessor class instance for a single signal.
@@ -539,10 +539,10 @@ class SignalProcessor:
 
         for str_file_pre_extension in asv_dict_filenames_and_process_variants:
             # last e - unprocessed input signal name
-            str_unproc_sig_name = self.in_signal_path.split("/")[-1].split(".")[0]
+            str_unproc_sig_name = self.in_signal_path.split(os.sep)[-1].split(".")[0]
             # sig_ext not used because .wav is in the so-called pre_extension
-            # sig_ext = self.in_signal_path.split("/")[-1].split(".")[-1]  # last e - signal extension
-            crt_file_path = r"/".join([self.out_signals_root_folder,
+            # sig_ext = self.in_signal_path.split("os.sep")[-1].split(".")[-1]  # last e - signal extension
+            crt_file_path = "os.sep".join([self.out_signals_root_folder,
                                        "_".join([str_unproc_sig_name,
                                                  str_file_pre_extension])])
             # for filter_type in dict_filenames_and_process_variants[filename]: # added
