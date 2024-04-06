@@ -6,10 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="5be8c0c6-2df8-47bd-84b6-86a71282070e" name="Changes" comment="Removed .tolist() from dtcwpt.py">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/imports.py" beforeDir="false" afterPath="$PROJECT_DIR$/imports.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/params_preproc.py" beforeDir="false" afterPath="$PROJECT_DIR$/params_preproc.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/signal_processor.py" beforeDir="false" afterPath="$PROJECT_DIR$/signal_processor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test-mix-console.py" beforeDir="false" afterPath="$PROJECT_DIR$/test-mix-console.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
