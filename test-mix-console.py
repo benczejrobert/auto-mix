@@ -48,22 +48,24 @@ aas = SignalProcessor(sig_path, dict_norm_values=dict_normalization_values, resa
 # Pipeline steps params
 proc_end_to_end = False
 create_training_features = False
-split = False
+split = True 
 split_perc_train = 70
 
 # Arguments for k_fold_cross_validation (train)
 train = False
 k_fold_path = os.path.join('..', 'Train')  #[path], relative path to Train folder
-k = len(get_class_list(db_path))  #[int], number of folds to be performed
+k = 1 #len(get_class_list(db_path))  #[int], number of folds to be performed
 batch_size = 1024  #[int], size of batch in examples (windows)
 shuffle_buffer = 3 * batch_size  #[int], size of the buffer used to shuffle the data
 epochs = 530 #130  #[int], number of epochs to be performed during training
+path_model = os.path.join('..', 'Model', 'model_1.h5')
+if not os.path.exists(os.path.split(path_model)[0]): #create Model folder if it does not exist
+    os.mkdir(os.path.split(path_model)[0])
 
-#epochs were 130, 530, 1030, 2030. nu paresa mai scada din loss deloc de la epoca 500 ish
 
 optimizer = 'adam'  #[string or tensorflow.keras.optimizers], optimizer to be used
 dropout = 0.5  #[float], between 0 and 1. Fraction of the input units to drop
-
+shuffle_mode = False  # [boolean], if True shuffles train and validation datasets as one dataset, else individually
 
 
 if proc_end_to_end:
@@ -96,11 +98,11 @@ if create_training_features:
 # training_data = aas.load_labels_metadata_for_training(preproc_signals_root_folder)
 # path = r'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'
 if split:
-    split_dataset(extracted_features_folder, split_perc_train)
+    split_dataset(extracted_features_folder, split_perc_train) # TODO put the split paths somewhere else
 
+scaler = None
 if train:
     if scaler == None:
-        scaler = compute_scaler(None)
+        scaler = compute_scaler()
     train_cardinality = None
-    k_fold_cross_validation(k_fold_path, k, path_model, tfrecord, train_cardinality, batch_size, shuffle_buffer,
-                            epochs, optimizer, dropout, scaler, shuffle_mode)
+    k_fold_cross_validation(k_fold_path, k, path_model, batch_size, epochs, optimizer, dropout, scaler, shuffle_mode)
