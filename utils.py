@@ -1,5 +1,38 @@
 from imports import *
 
+def get_train_test_paths(features_path):
+    """
+        Copies the folder structure from the features_path to the Train and Test folders.
+    :param features_path:
+    :return:
+    """
+    test_path = os.path.join(os.sep.join(features_path.split(os.sep)[0:-1]), "Test")
+    train_path = os.path.join(os.sep.join(features_path.split(os.sep)[0:-1]), "Train")
+
+    for t_path in [test_path, train_path]:
+        if os.path.exists(t_path):
+            rmtree(t_path)  # delete Test/Train folder if it exists
+        os.mkdir(t_path)  # creates Test/Train folder where the subfolders will be for each of the drum_channels
+
+    return train_path, test_path
+
+def get_callbacks(path_model):
+    logdir = "..\\Log\\log_" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = TensorBoard(log_dir=logdir)
+    model_checkpoint = ModelCheckpoint(path_model, monitor="val_loss", verbose=1, save_best_only=True)
+    return [model_checkpoint, tensorboard_callback]
+
+def train_model(model, train_dataset, val_dataset, batch_size, epochs, path_model):
+    """
+    If tfrecord is True:
+        train_dataset and val_dataset must be a tensorflow.data.Dataset.Batch
+    Else:
+        train_dataset and val_dataset must be a tuple of (features, labels)
+    """
+
+    model.fit(x=train_dataset[0], y=train_dataset[1], validation_data=(val_dataset[0], val_dataset[1]),
+              batch_size=batch_size, epochs=epochs, verbose=2, callbacks=get_callbacks(path_model=path_model))
+
 
 class MultiDim_MinMaxScaler():
     def __init__(self):
@@ -44,7 +77,7 @@ class MultiDim_MaxAbsScaler_orig():  #if not in use modify name to end with _ori
         return x/self.maxabs
 
 
-def compute_scaler(tfrecord, with_mean=True, scaler_type='maxabs'):
+def compute_scaler(with_mean=True, scaler_type='maxabs'):
     """
     Computes the scaler on the entire database.
 
@@ -67,7 +100,7 @@ def compute_scaler(tfrecord, with_mean=True, scaler_type='maxabs'):
     if scaler_type == 'maxabs':
         scaler = MaxAbsScaler()  # -> does indeed [-1,1]
 
-    paths = [os.path.join('..', 'Train'), os.path.join('..', 'Test')]
+    paths = [os.path.join('..', 'Train'), os.path.join('..', 'Test')] # TODO update paths
     for path in paths:
         pathology_folders = sorted(os.listdir(path))
         for pathology in pathology_folders:
