@@ -17,8 +17,8 @@ def split_dataset(split_path, train_split_perc):
 
     # TODO in the features folder there will be subfolders for each drum channel.
     #  in the test/train folders there will be the same subfolders with the same files
-    test_path = os.path.join(os.sep.join(split_path.split("/")[0:-1]), 'Test')
-    train_path = os.path.join(os.sep.join(split_path.split("/")[0:-1]), 'Train')
+    test_path = os.path.join(os.sep.join(split_path.split(os.sep)[0:-1]), 'Test')
+    train_path = os.path.join(os.sep.join(split_path.split(os.sep)[0:-1]), 'Train')
 
     # drum_channels = load_channels(split_path) # channels are the subfolders in the split_path i.e. feature_path
 
@@ -41,8 +41,8 @@ def split_dataset(split_path, train_split_perc):
 
         # TODO check these when multiple channels are present - might need to remove the file name or something.
         if single_channel:
-            # dst_test = os.path.join(test_path, subdir.split("/")[-1])
-            # dst_train = os.path.join(train_path, subdir.split("/")[-1])
+            # dst_test = os.path.join(test_path, subdir.split(os.sep)[-1])
+            # dst_train = os.path.join(train_path, subdir.split(os.sep)[-1])
             dst_test = test_path
             dst_train = train_path
         print(debugger_details(), dst_test, dst_train)
