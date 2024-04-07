@@ -19,7 +19,6 @@ def split_dataset(split_path, train_split_perc):
     #  in the test/train folders there will be the same subfolders with the same files
     test_path = os.path.join(os.sep.join(split_path.split(os.sep)[0:-1]), 'Test')
     train_path = os.path.join(os.sep.join(split_path.split(os.sep)[0:-1]), 'Train')
-
     # drum_channels = load_channels(split_path) # channels are the subfolders in the split_path i.e. feature_path
 
     for t_path in [test_path, train_path]:
@@ -29,9 +28,7 @@ def split_dataset(split_path, train_split_perc):
         # [os.mkdir(os.path.join(t_path, folder)) for folder in drum_channels]  # make the subfolders also
     single_channel = True
     for subdir, dirs, files in os.walk(split_path):
-        print(subdir, dirs, files)
-        if subdir == split_path and len(files) == 0: # TODO checkif 'and' should be 'or'
-            print("in split_dataset subdir = ", subdir)
+        if subdir == split_path and (len(files) <= 1 or files[0].endswith("txt")):
             single_channel = False
             continue  # skip first iteration (parent folder), get to subfolders
         no_of_test_files = len(files) - int(train_split_perc / 100 * len(files))
@@ -45,25 +42,22 @@ def split_dataset(split_path, train_split_perc):
             # dst_train = os.path.join(train_path, subdir.split(os.sep)[-1])
             dst_test = test_path
             dst_train = train_path
-        print(debugger_details(), dst_test, dst_train)
+        else:
+            dst_test = os.path.join(test_path, subdir.split(os.sep)[-1])
+            dst_train = os.path.join(train_path, subdir.split(os.sep)[-1])
+            if not os.path.exists(dst_test):
+                os.mkdir(dst_test)
+            if not os.path.exists(dst_train):
+                os.mkdir(dst_train)
         i = 0
         for file in sorted(files):
-            print(debugger_details(), os.path.join(subdir, file))
             if i % 10 < 3 and i not in [10, 11, 12]:
                 print("split_dataset reached ", i + 1, ordinal[i % 10] + " file of " + subdir)
             else:
                 print("split_dataset reached ", i + 1, "th file of " + subdir)
             # if int(file.split('.')[-2]) in test_file_indices:
             if int(i) in test_file_indices:
-                if single_channel:
-                    # todo differentiation here may not be needed - rather in the creation of the dst_* path
-                    copyfile(os.path.join(subdir, file), os.path.join(dst_test, file))
-                else:
-                    copy(os.path.join(subdir, file), dst_test)
+                copyfile(os.path.join(subdir, file), os.path.join(dst_test, file))
             else:
-                if single_channel:
-                    # todo differentiation here may not be needed - rather in the creation of the dst_* path
-                    copyfile(os.path.join(subdir, file), os.path.join(dst_train, file))
-                else:
-                    copy(os.path.join(subdir, file), dst_train)
+                copyfile(os.path.join(subdir, file), os.path.join(dst_train, file))
             i += 1
