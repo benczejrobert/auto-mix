@@ -29,10 +29,31 @@ def train_model(model, train_dataset, val_dataset, batch_size, epochs, path_mode
     Else:
         train_dataset and val_dataset must be a tuple of (features, labels)
     """
+    # print('---',val_dataset[0].dtype)
+    # print('---',val_dataset[0][0].dtype)
+    # print('dty',val_dataset[0].dtype)
+
+    # print(np.max(train_dataset[0]))
+    # print('in train model',(train_dataset[1]))
+
+    print('-----------------------')
+
+    [print(i.shape, i.dtype) for i in model.inputs]
+    [print(o.shape, o.dtype) for o in model.outputs]
+    # [print(l.name, l.input_shape, l.dtype) for l in model.layers]
+
+    # This is a HIGHLY misleading error, as this is basically a general error, which might have NOTHING to do with floats.
+    # For example in my case it was caused by a string column of the pandas dataframe having some np.NaN values in it. Go figure!
+    # fix it by replacing nan or inf values.
 
     model.fit(x=train_dataset[0], y=train_dataset[1], validation_data=(val_dataset[0], val_dataset[1]),
               batch_size=batch_size, epochs=epochs, verbose=2, callbacks=get_callbacks(path_model=path_model))
 
+
+
+    # model.fit(x=train_dataset[0].astype('float32'), y=train_dataset[1].astype('float32'),
+    #           validation_data=(val_dataset[0].astype('float32'), val_dataset[1].astype('float32')),
+    #           batch_size=batch_size, epochs=epochs, verbose=2, callbacks=get_callbacks(path_model=path_model))
 
 class MultiDim_MinMaxScaler():
     def __init__(self):
@@ -77,7 +98,7 @@ class MultiDim_MaxAbsScaler_orig():  #if not in use modify name to end with _ori
         return x/self.maxabs
 
 
-def compute_scaler(with_mean=True, scaler_type='maxabs'):
+def compute_scaler(data_path, with_mean=True, scaler_type='maxabs'):
     """
     Computes the scaler on the entire database.
 
@@ -90,8 +111,7 @@ def compute_scaler(with_mean=True, scaler_type='maxabs'):
     """
     X = []
     if scaler_type not in ['standard', 'minmax', 'maxabs']:
-        print("Please select scaler_type from: 'standard', 'minmax', 'maxabs' ")
-        sys.exit()
+        raise Exception(f"{debugger_details()} Please select scaler_type from: 'standard', 'minmax', 'maxabs' ")
     if scaler_type == 'standard':
         scaler = StandardScaler(
             with_mean=with_mean)  # -> not just a maxabs +/-3, also modifies the distribution to Gauss
@@ -100,21 +120,27 @@ def compute_scaler(with_mean=True, scaler_type='maxabs'):
     if scaler_type == 'maxabs':
         scaler = MaxAbsScaler()  # -> does indeed [-1,1]
 
-    paths = [os.path.join('..', 'Train'), os.path.join('..', 'Test')] # TODO update paths
+    paths = [data_path.replace("Test","Train"), data_path]
+    if "Train" in data_path:
+        paths = [data_path, data_path.replace("Train","Test")]
     for path in paths:
-        pathology_folders = sorted(os.listdir(path))
-        for pathology in pathology_folders:
-            files = sorted(os.listdir(os.path.join(path, pathology)))
-            for file in files:
-                npy = np.load(os.path.join(path, pathology, file))
-                try:
-                    if len(npy[0].shape) >= 2:  # if 1st element is not a vector or a scalar
-                        if scaler_type == 'minmax':
-                            scaler = MultiDim_MinMaxScaler()
-                        else:
-                            scaler = MultiDim_MaxAbsScaler()  # if standard scale or maxabs [-1,1]
-                except:  # 1st element is a scalar, scalars have no len()
-                    pass
+        channel_folders = sorted(os.listdir(path))
+        for file in channel_folders:
+            # print(f"{debugger_details()} pathology: {pathology}")
+            # files = sorted(os.listdir(os.path.join(path, pathology)))
+            npy = np.load(os.path.join(path, file), allow_pickle=True)  # this contains the features and the labels. get only features
+            npy = npy[0]
+            try:
+                if len(npy[0].shape) >= 2:  # if 1st element is not a vector or a scalar
+                    if scaler_type == 'minmax':
+                        scaler = MultiDim_MinMaxScaler()
+                    else:
+                        scaler = MultiDim_MaxAbsScaler()  # if standard scale or maxabs [-1,1]
+            except:  # 1st element is a scalar, scalars have no len()
+                pass
+            if len(npy.shape) < 2:
+                X.append(npy)
+            else:
                 X.extend(npy)
 
     scaler.fit(X)
@@ -147,19 +173,19 @@ def utils_cepstrum(w_signal, N_fft):
     window_length = np.shape(w_signal)[-1]
     try:
         interm = amplitude(FFT(w_signal, N_fft))
-        interm = 0.001 * np.float64(interm == 0) + interm
+        interm = 0.001 * np.float32(interm == 0) + interm
         C = IFFT(np.log(interm), N_fft)[:, 0:window_length]
     except:
         interm = amplitude(FFT(w_signal, N_fft))
-        interm = 0.001*np.float64(interm==0) + interm
+        interm = 0.001*np.float32(interm==0) + interm
         C = IFFT(np.log(interm), N_fft)[0:window_length]
 
     return C.real
 
 def create_model(data = np.array([[[1,2,3],[1,2,3]]]), no_classes = 3, optimizer = 'adam', dropout_rate=0.5, summary=True): #_initial
     inshape = list(data.shape)[1::]
-    input = Input(shape=inshape)
-    input2 = input
+    input1 = Input(shape=inshape)
+    input2 = input1
     if len(inshape)>2:
         #dropout = 0.4
         inshape.append(1)
@@ -188,39 +214,42 @@ def create_model(data = np.array([[[1,2,3],[1,2,3]]]), no_classes = 3, optimizer
         print("in create model inshape = ", inshape)
         input2 = Conv1D(input_shape=inshape,filters=1,kernel_size=1,padding='same',data_format="channels_last")(input2)
         input2 = Flatten()(input2)
-    # hdn1 = Dense(512, name='layer1')(input2)
-    # act1 = Activation('relu')(hdn1)
-    # act1 = BatchNormalization()(act1)
-    # dp1 = Dropout(dropout_rate)(act1)
-    #
-    # hdn2 = Dense(256, name='layer2')(dp1)
-    # act2 = Activation('relu')(hdn2)
-    # # bn2 = BatchNormalization()(act2)
-    # dp2 = Dropout(dropout_rate)(act2)
-    #
-    # hdn3 = Dense(128, name='layer3')(dp2)
-    # act3 = Activation('relu')(hdn3)
-    # # bn3 = BatchNormalization()(act3)
-    # dp3 = Dropout(dropout_rate)(act3)
-    #
-    # hdn4 = Dense(64, name='layer4')(dp3)
-    # act4 = Activation('relu')(hdn4)
-    # # bn4 = BatchNormalization()(act4)
-    # dp4 = Dropout(dropout_rate)(act4)
-    #
-    # hdn5 = Dense(32, name='layer5')(dp4)
-    # act5 = Activation('relu')(hdn5)
-    # # bn5 = BatchNormalization()(act5)
-    # dp5 = Dropout(dropout_rate)(act5)
-    hdn6 = Dense(no_classes)(input2)
-    output = Activation('softmax')(hdn6)
+        # input2 = Dense(units=inshape[0],name='layer0')(input2) # todo try this instead of above 2 lines
+    hdn1 = Dense(512, name='layer1')(input2)
+    act1 = Activation('relu')(hdn1)
+    act1 = BatchNormalization()(act1)
+    dp1 = Dropout(dropout_rate)(act1)
 
-    model = Model(inputs=input, outputs=output)
+    hdn2 = Dense(256, name='layer2')(dp1)
+    act2 = Activation('relu')(hdn2)
+    # bn2 = BatchNormalization()(act2)
+    dp2 = Dropout(dropout_rate)(act2)
+
+    hdn3 = Dense(128, name='layer3')(dp2)
+    act3 = Activation('relu')(hdn3)
+    # bn3 = BatchNormalization()(act3)
+    dp3 = Dropout(dropout_rate)(act3)
+
+    hdn4 = Dense(64, name='layer4')(dp3)
+    act4 = Activation('relu')(hdn4)
+    # bn4 = BatchNormalization()(act4)
+    dp4 = Dropout(dropout_rate)(act4)
+
+    hdn5 = Dense(32, name='layer5')(dp4)
+    act5 = Activation('relu')(hdn5)
+    # bn5 = BatchNormalization()(act5)
+    dp5 = Dropout(dropout_rate)(act5)
+    # output = Dense(no_classes)(input2)
+    output = Dense(no_classes)(dp5)
+    # output = Activation('softmax')(hdn6)
+
+    model = Model(inputs=input1, outputs=output)
 
     if summary:
         print(model.summary())
 
-    model.compile(optimizer=optimizer, loss=tf.keras.losses.categorical_crossentropy, metrics=['accuracy'])
+    # model.compile(optimizer=optimizer, loss=tf.keras.losses.categorical_crossentropy, metrics=['accuracy'])
+    model.compile(optimizer=optimizer, loss=tf.keras.losses.MeanSquaredError, metrics=['accuracy']) # MSE or MAE
     return model
 
 

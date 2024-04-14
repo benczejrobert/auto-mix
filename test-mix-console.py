@@ -1,11 +1,13 @@
 # import matplotlib.pyplot as plt
-from feature_extractor import *
 
 ## import run parameters from the params files
-from signal_processor import *
 from params_features import *
+from signal_processor import *
+from feature_extractor import *
 from split_dataset import *
+from channel_feature_scalers import *
 from k_fold_cross_validation import *
+
 # exec(open("params_preproc.py", 'r').read())
 # exec(open("params_features.py", 'r').read())
 
@@ -48,14 +50,14 @@ aas = SignalProcessor(sig_root_path, dict_norm_values=dict_normalization_values,
 # Pipeline steps params
 proc_end_to_end = False
 create_training_features = False
-split = True
+split = False
 split_perc_train = 70
 
 # Arguments for k_fold_cross_validation (train)
-train = False
-k_fold_path = os.path.join('..', 'Train')  #[path], relative path to Train folder
+train = True
+train_data_root = os.path.join('..', 'data', 'Train')  #[path], relative path to Train folder
 k = 1 #len(get_class_list(db_path))  #[int], number of folds to be performed
-batch_size = 1024  #[int], size of batch in examples (windows)
+batch_size = 2  #[int], size of batch in examples (diff features)
 shuffle_buffer = 3 * batch_size  #[int], size of the buffer used to shuffle the data
 epochs = 530 #130  #[int], number of epochs to be performed during training
 path_model = os.path.join('..', 'Model', 'model_1.h5')
@@ -66,8 +68,7 @@ if not os.path.exists(os.path.split(path_model)[0]): #create Model folder if it 
 optimizer = 'adam'  #[string or tensorflow.keras.optimizers], optimizer to be used
 dropout = 0.5  #[float], between 0 and 1. Fraction of the input units to drop
 shuffle_mode = False  # [boolean], if True shuffles train and validation datasets as one dataset, else individually
-
-
+obj_feature_scalers = ChannelFeatureScalers(train_data_root)
 if proc_end_to_end:
     # today = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
     #
@@ -105,9 +106,8 @@ if create_training_features:
 if split:
     split_dataset(extracted_features_folder, split_perc_train) # TODO put the split paths somewhere else
 
-scaler = None
+# scaler = None
 if train:
-    if scaler == None:
-        scaler = compute_scaler()
-    train_cardinality = None
-    k_fold_cross_validation(k_fold_path, k, path_model, batch_size, epochs, optimizer, dropout, scaler, shuffle_mode)
+    # if scaler == None:
+    #     scaler = compute_scaler()   # TODO should data be scaled per channel or per everything?
+    k_fold_cross_validation(train_data_root, k, path_model, batch_size, epochs, optimizer, dropout, obj_feature_scalers, shuffle_mode)

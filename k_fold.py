@@ -1,6 +1,6 @@
 from utils import *
 
-def k_fold(path, k, fold_nr):
+def k_fold(path, k, fold_nr, perc_val_single_fold=0.2):
     '''
     Splits the Train set using k-fold principle.
 
@@ -21,29 +21,31 @@ def k_fold(path, k, fold_nr):
     '''
     if fold_nr > k or fold_nr <= 0:
         raise Exception("Incorect value for fold_nr")
-
-
-    pathology_folders = sorted(os.listdir(path))
-    x_train, x_val, y_train, y_val = [], [], [], []
-    for pathology in pathology_folders:
-        files = sorted(os.listdir(os.path.join(path, pathology)))
-        random.shuffle(files)
+    x_train, x_val, y_train, y_val = [], [], [], []  # TODO should only iterate files not dirs.
+    for current_filepath, dirs, files in os.walk(path):
+        if len(dirs):
+            raise Exception(f"{debugger_details()} There should be no directories in the {current_filepath} Train folder")
+        if not len(files):
+            continue
+        crt_sorted_files = sorted(files)
+        random.shuffle(crt_sorted_files)
         if k == 1:
-            nr_of_files_to_load = len(files) // 5  #one speaker val hardcoded
-            #todo un-hardcode this //5, make it user-specified^
+            nr_of_files_to_load = round(len(files) * perc_val_single_fold)
         else:
-            nr_of_files_to_load = len(files) // k
+            nr_of_files_to_load = len(crt_sorted_files) // k
         range_min = (fold_nr - 1) * nr_of_files_to_load
         range_max = range_min + nr_of_files_to_load
-        eval_files = files[range_min:range_max]
-        for file in files:
-            npy = np.load(os.path.join(path, pathology, file))
+        eval_files = crt_sorted_files[range_min:range_max]
+        for file in crt_sorted_files:
+            npy = np.load(os.path.join(current_filepath, file), allow_pickle=True)
             if file in eval_files:
-                x_val.extend(npy[0]) # TODO or append?
-                y_val.extend(npy[1])
+                x_val.append(npy[0])  #TODO append to assoc train datapoints with their labels.
+                y_val.append(npy[1])   #but is there a situation where extend would suit?
             else:
-                x_train.extend(npy[0])
-                y_train.extend(npy[1])
+                x_train.append(npy[0])
+                y_train.append(npy[1])
+        # print(debugger_details(), np.asanyarray(x_train).shape, np.asanyarray(y_train).shape)
+        # print(debugger_details(), np.asanyarray(x_val).shape, np.asanyarray(y_val).shape)
     y_train = np.asanyarray(y_train)
     y_val = np.asanyarray(y_val)
     return (np.asanyarray(x_train), np.asanyarray(x_val),

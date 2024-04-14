@@ -477,7 +477,7 @@ class SignalProcessor:
                 # (self.dbgain_max - self.dbgain_min) * 2 - 1)
                 # # normalize -1, 1 max abs
                 # normalized_param = param_dict[param_name] / max(np.abs([self.dbgain_min, self.dbgain_max]))
-                if normalized_param:
+                if normalized_param is not None:
                     list_out_params.append(normalized_param)
         return list_out_params
 
@@ -627,15 +627,17 @@ class SignalProcessor:
 
         # copy the params for all channels to the processed signals folder
         copyfile("params_preproc.py", os.path.join(self.processed_signals_root_folder, f"params-preproc-{today}.txt"))
-    def load_labels_metadata_for_training(self, training_data_folder):
+    def load_labels_metadata_for_training(self, training_data_folder, norm_type='0,1'):
         """
         This function loads the metadata from the processed signals and normalizes it based on the param limits
         in the self of  this class.
         :param training_data_folder: [str]
+        :param norm_type: [str] normalization type for the metadata (check _normalize_params() docstring for details)
         :return: [list] of [float] with the ordered params for each filter - order as in the metadata
 
         @BR20240315 Fixed bad normalization for dbgain (it was normalized in -1,1 regardless of normalize type).
         @BR20240316 Tested function
+        @BR20240414 Added the norm_type parameter to the function signature.
         """
 
         list_all_metadata = []
@@ -647,15 +649,16 @@ class SignalProcessor:
                 print(f"--- {debugger_details()} metadata for sound crt_file ", crt_file, " ---")
                 print("\t", metadata)
                 # normalize metadata
-                list_normed_params = (self._normalize_params(metadata))
+                list_normed_params = (self._normalize_params(metadata, norm_type))
                 # it will be like a matrix of params. each row is the list of params for a signal (Y labels)
                 list_all_metadata.append(list_normed_params)
 
         return list_all_metadata
 
 
-    def create_features_diff_for_training_single_signal(self, processed_audio_folder,features_path, obj_feature_extractor,
-                                                        pre_diff=True, process_entire_signal = True):
+    def create_features_diff_for_training_single_signal(self, processed_audio_folder, features_path,
+                                                        obj_feature_extractor, pre_diff=True,
+                                                        process_entire_signal = True, norm_type='0,1'):
         """
             This function loads the processed signals and extracts the features from them.
             :param obj_feature_extractor: [FeatureExtractor]
@@ -663,11 +666,14 @@ class SignalProcessor:
             :param pre_diff: [bool] if True, the function will load the processed signals and subtract the signals to
                                 extract the features. Otherwise, it will make a difference between the features.
             :param process_entire_signal: [bool] does not window the input signal in librosa's 2D transformations
+            :param features_path: [str] path to the folder where the features will be saved
+            :param norm_type: [str] normalization type for the metadata (check _normalize_params() docstring for details)
             :return: [list] of [np.ndarray] with the features for each signal
 
             @BR20240406 Added for loop to process channel subfolders in the processed_signals_root_folder.
             @BR20240406 Removed processed_audio_folder parameter to the function signature because it's on the self.
             @BR20240407 Added features_path parameter to the function signature.
+            @BR20240414 Added the norm_type parameter to the function signature.
         """
         if process_entire_signal:
             obj_feature_extractor.features_dict["hop_length"] = len(self.signal) + 1
@@ -680,8 +686,7 @@ class SignalProcessor:
                 # print(f"{debugger_details()} crt_file_path", crt_file_path)
                 crt_signal, rate = librosa.load(crt_file_path, sr=self.rate)
                 metadata = self.read_metadata(crt_file_path)
-                # print(f"{debugger_details()} metadata for sound crt_file", crt_file,':', metadata, " ---")
-                list_normed_params = (self._normalize_params(metadata))
+                list_normed_params = np.array(self._normalize_params(metadata, norm_type)).astype("float32")
                 # difference before features extracted
                 if pre_diff:
                     output_file_path = os.path.join(features_path, f"features_diff_and_params_{crt_file.split('.')[0]}.npy")
@@ -702,10 +707,13 @@ class SignalProcessor:
                 # save the features with the metadata:
                 np.save(output_file_path, (diff_features, list_normed_params))  # saves tuple of features and params
 
-        # asdf # intentionally added for code to crash here
-    def create_features_diff_for_training(self, inst_feature_extractor, bool_pre_diff=True, bool_process_entire_signal = True):
+    def create_features_diff_for_training(self, inst_feature_extractor, bool_pre_diff=True,
+                                          bool_process_entire_signal = True):
         if os.path.isfile(os.listdir(self.processed_signals_root_folder)[0]):
-            self.create_features_diff_for_training_single_signal(self.processed_signals_root_folder,self.features_folder, inst_feature_extractor, bool_pre_diff, bool_process_entire_signal)
+            self.create_features_diff_for_training_single_signal(self.processed_signals_root_folder,
+                                                                 self.features_folder,
+                                                                 inst_feature_extractor,
+                                                                 bool_pre_diff, bool_process_entire_signal)
         else:
             for crt_feats_folder in sorted(os.listdir(self.processed_signals_root_folder)):
                 procsig_crt_path = os.path.join(self.processed_signals_root_folder, crt_feats_folder)
@@ -714,5 +722,6 @@ class SignalProcessor:
                     if not os.path.exists(feats_crt_path):
                         os.mkdir(feats_crt_path)
                     print(f"--- Processing features in folder: {feats_crt_path} ---")
-                    self.create_features_diff_for_training_single_signal(procsig_crt_path,feats_crt_path, inst_feature_extractor,
+                    self.create_features_diff_for_training_single_signal(procsig_crt_path,feats_crt_path,
+                                                                         inst_feature_extractor,
                                                                          bool_pre_diff, bool_process_entire_signal)
