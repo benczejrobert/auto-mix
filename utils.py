@@ -17,6 +17,7 @@ def get_train_test_paths(features_path):
     return train_path, test_path
 
 def get_callbacks(path_model):
+    # TODO add path_model to logdir
     logdir = "..\\Log\\log_" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = TensorBoard(log_dir=logdir)
     model_checkpoint = ModelCheckpoint(path_model, monitor="val_loss", verbose=1, save_best_only=True)
