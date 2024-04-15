@@ -459,6 +459,7 @@ class SignalProcessor:
         normalized_param = None
         list_out_params = []
         for filter_type in dict_params:
+            # TODO checkif filter type is always in the same order
             param_dict = eval(dict_params[filter_type][0])
             for param_name in param_dict:
                 # normalize the parameters
