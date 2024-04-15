@@ -7,6 +7,7 @@ from feature_extractor import *
 from split_dataset import *
 from channel_feature_scalers import *
 from k_fold_cross_validation import *
+from predict import *
 
 # exec(open("params_preproc.py", 'r').read())
 # exec(open("params_features.py", 'r').read())
@@ -54,13 +55,18 @@ split = False
 split_perc_train = 70
 
 # Arguments for k_fold_cross_validation (train)
-train = True
+train = False
 train_data_root = os.path.join('..', 'data', 'Train')  #[path], relative path to Train folder
+test_data_root = os.path.join('..', 'data', 'Test')  #[path], relative path to Train folder
 k = 1 #len(get_class_list(db_path))  #[int], number of folds to be performed
 batch_size = 2  #[int], size of batch in examples (diff features)
 shuffle_buffer = 3 * batch_size  #[int], size of the buffer used to shuffle the data
 epochs = 530 #130  #[int], number of epochs to be performed during training
 path_model = os.path.join('..', 'Model', 'model_1.h5')
+
+# Arguments for predict (test)
+predict = True
+
 if not os.path.exists(os.path.split(path_model)[0]): #create Model folder if it does not exist
     os.mkdir(os.path.split(path_model)[0])
 
@@ -70,34 +76,15 @@ dropout = 0.5  #[float], between 0 and 1. Fraction of the input units to drop
 shuffle_mode = False  # [boolean], if True shuffles train and validation datasets as one dataset, else individually
 obj_feature_scalers = ChannelFeatureScalers(train_data_root)
 if proc_end_to_end:
-    # today = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
-    #
-    # # TODO when multiple channels will be added, the processing will iterate through
-    # #  the list of dict_all_filter_settings in params_preproc.py
-    # dict_filenames_and_process_variants = aas.create_end_to_end_all_proc_vars_combinations(list_dict_all_filter_settings[0],
-    #                                                                                        root_filename="eq_ed",
-    #                                                                                        start_index=0,
-    #                                                                                        end_index=None,
-    #                                                                                        number_of_filters=no_filters)
     # aas.process_signal_all_variants(dict_filenames_and_process_variants) # TODO maybe add run date to the metadata or name of the processed signals
-    # # TODO save the .txt elsewhere to avoid messing with the correctness of the test train split
-
     aas.process_multiple_signals(list_settings_dict=list_dict_all_filter_settings)
 
-
-    # copyfile("params_preproc.py", os.path.join(preproc_signals_root_folder, f"params-preproc-{today}.txt"))
-
-    # for d in dict_filenames_and_process_variants:
-    #     print("file name in dict_filenames_and_process_variants", d, '-----')
-    #     print(len(set(dict_filenames_and_process_variants[d].keys())))
-    #     print(dict_filenames_and_process_variants[d])
 if create_training_features:
     today = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
     feats_extractor = FeatureExtractor(feature_list, feature_dict, variance_type, raw_features, keep_feature_dims)
 
     aas.create_features_diff_for_training(inst_feature_extractor=feats_extractor,
                                           bool_pre_diff=param_pre_diff, bool_process_entire_signal=True)
-    # TODO save the .txt elsewhere to avoid messing with the correctness of the test train split
     copyfile("params_features.py", os.path.join(extracted_features_folder, f"params-features-{today}.txt"))
 
 # aas.process_signal_all_variants(signal_in, {test_fname: dict_filenames_and_process_variants[test_fname]})
@@ -111,3 +98,7 @@ if train:
     # if scaler == None:
     #     scaler = compute_scaler()   # TODO should data be scaled per channel or per everything?
     k_fold_cross_validation(train_data_root, k, path_model, batch_size, epochs, optimizer, dropout, obj_feature_scalers, shuffle_mode)
+
+if predict:
+    run_predict(test_data_root, obj_feature_scalers)
+
