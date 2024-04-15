@@ -1,5 +1,25 @@
 from imports import *
 
+
+def create_test_npy(path, scaler):
+    """Creates x_test and y_test (true labels) from .npy files"""
+    x_test, y_true = [], []
+    for current_filepath, dirs, files in os.walk(path):
+        if len(dirs):
+            raise Exception(
+                f"{debugger_details()} There should be no directories in the {current_filepath} Test folder")
+        if not len(files):
+            continue
+        crt_sorted_files = sorted(files)
+        random.shuffle(crt_sorted_files)
+        for file in crt_sorted_files:
+            npy = np.load(os.path.join(current_filepath, file), allow_pickle=True)
+            x_test.append(npy[0])  # TODO append to assoc train datapoints with their labels.
+            y_true.append(npy[1])  # but is there a situation where extend would suit?
+    x_test = scaler.transform(x_test)
+    return (np.asanyarray(x_test), np.asanyarray(y_true))
+
+
 def get_train_test_paths(features_path):
     """
         Copies the folder structure from the features_path to the Train and Test folders.
