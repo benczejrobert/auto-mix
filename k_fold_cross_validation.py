@@ -16,6 +16,7 @@ def k_fold_cross_validation(path, k, path_model_input, batch_size,
         - shuffle_mode [boolean], if False shuffle the data from train and val separately
 
     @BR20240414 Renamed path_model to path_model_input to avoid overwriting in the path_model variable in the function
+    @BR20240415 Renamed model name to include the current date and time and avoid overriting
     '''
     for current_folderpath, dirs, files in os.walk(path):
         if not len(files):
@@ -24,7 +25,8 @@ def k_fold_cross_validation(path, k, path_model_input, batch_size,
 
         channel = os.path.split(current_folderpath)[-1]
         model_folder_path = os.path.join(os.path.split(path_model_input)[0], channel)
-        model_name = os.path.split(path_model_input)[-1]
+        model_name = os.path.split(path_model_input)[-1].split('.')[0]\
+                        + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.h5'
         if not os.path.exists(model_folder_path):  # create Model folder if it does not exist
             os.mkdir(model_folder_path)
         path_model = os.path.join(model_folder_path, model_name)
