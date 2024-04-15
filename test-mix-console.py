@@ -2,8 +2,8 @@
 
 ## import run parameters from the params files
 from params_features import *
-from signal_processor import *
-from feature_extractor import *
+from SignalProcessor import *
+from FeatureExtractor import *
 from split_dataset import *
 from channel_feature_scalers import *
 from k_fold_cross_validation import *
