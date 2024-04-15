@@ -13,7 +13,9 @@ def k_fold_cross_validation(path, k, path_model_input, batch_size,
         - k [int], number of subsets used to split the Train set into
         - path_model [string], relative path to save the trained model
         - batch_size [int], the size of a batch used to train the model
-        - shuffle_mode [boolean], if False shuffle the data from train and val separately 
+        - shuffle_mode [boolean], if False shuffle the data from train and val separately
+
+    @BR20240414 Renamed path_model to path_model_input to avoid overwriting in the path_model variable in the function
     '''
     for current_folderpath, dirs, files in os.walk(path):
         if not len(files):
