@@ -29,27 +29,9 @@ def train_model(model, train_dataset, val_dataset, batch_size, epochs, path_mode
     Else:
         train_dataset and val_dataset must be a tuple of (features, labels)
     """
-    # print('---',val_dataset[0].dtype)
-    # print('---',val_dataset[0][0].dtype)
-    # print('dty',val_dataset[0].dtype)
-
-    # print(np.max(train_dataset[0]))
-    # print('in train model',(train_dataset[1]))
-
-    print('-----------------------')
-
-    [print(i.shape, i.dtype) for i in model.inputs]
-    [print(o.shape, o.dtype) for o in model.outputs]
-    # [print(l.name, l.input_shape, l.dtype) for l in model.layers]
-
-    # This is a HIGHLY misleading error, as this is basically a general error, which might have NOTHING to do with floats.
-    # For example in my case it was caused by a string column of the pandas dataframe having some np.NaN values in it. Go figure!
-    # fix it by replacing nan or inf values.
 
     model.fit(x=train_dataset[0], y=train_dataset[1], validation_data=(val_dataset[0], val_dataset[1]),
               batch_size=batch_size, epochs=epochs, verbose=2, callbacks=get_callbacks(path_model=path_model))
-
-
 
     # model.fit(x=train_dataset[0].astype('float32'), y=train_dataset[1].astype('float32'),
     #           validation_data=(val_dataset[0].astype('float32'), val_dataset[1].astype('float32')),
@@ -249,7 +231,7 @@ def create_model(data = np.array([[[1,2,3],[1,2,3]]]), no_classes = 3, optimizer
         print(model.summary())
 
     # model.compile(optimizer=optimizer, loss=tf.keras.losses.categorical_crossentropy, metrics=['accuracy'])
-    model.compile(optimizer=optimizer, loss=tf.keras.losses.MeanSquaredError, metrics=['accuracy']) # MSE or MAE
+    model.compile(optimizer=optimizer, loss=tf.keras.losses.MeanSquaredError(), metrics=['mean_squared_error']) # MSE or MAE
     return model
 
 

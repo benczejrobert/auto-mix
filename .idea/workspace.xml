@@ -5,13 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5be8c0c6-2df8-47bd-84b6-86a71282070e" name="Changes" comment="Removed .tolist() from dtcwpt.py">
-      <change afterPath="$PROJECT_DIR$/channel_feature_scalers.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/k_fold.py" beforeDir="false" afterPath="$PROJECT_DIR$/k_fold.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/k_fold_cross_validation.py" beforeDir="false" afterPath="$PROJECT_DIR$/k_fold_cross_validation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/params_features.py" beforeDir="false" afterPath="$PROJECT_DIR$/params_features.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/signal_processor.py" beforeDir="false" afterPath="$PROJECT_DIR$/signal_processor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test-mix-console.py" beforeDir="false" afterPath="$PROJECT_DIR$/test-mix-console.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

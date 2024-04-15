@@ -3,7 +3,7 @@ import numpy as np
 from k_fold import k_fold
 from utils import *
 
-def k_fold_cross_validation(path, k, path_model, batch_size,
+def k_fold_cross_validation(path, k, path_model_input, batch_size,
                             epochs, optimizer, dropout, inst_feature_scalers, shuffle_mode):
     '''
     Trains the model using K-fold algorithm
@@ -21,8 +21,8 @@ def k_fold_cross_validation(path, k, path_model, batch_size,
         scaler = inst_feature_scalers.scalers[os.path.split(current_folderpath)[-1]]  # get scaler for current channel
 
         channel = os.path.split(current_folderpath)[-1]
-        model_folder_path = os.path.join(os.path.split(path_model)[0], channel)
-        model_name = os.path.split(path_model)[-1]
+        model_folder_path = os.path.join(os.path.split(path_model_input)[0], channel)
+        model_name = os.path.split(path_model_input)[-1]
         if not os.path.exists(model_folder_path):  # create Model folder if it does not exist
             os.mkdir(model_folder_path)
         path_model = os.path.join(model_folder_path, model_name)

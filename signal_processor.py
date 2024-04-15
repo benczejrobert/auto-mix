@@ -453,6 +453,8 @@ class SignalProcessor:
 
                 # TODO may need to reorder the above params^
                       because the ordering of dict keys was solved : added the numbers to the filter bands
+            @BR20240414 added explicit comparison with None for normalized_param to avoid ignoring 0 values.
+
         """
         normalized_param = None
         list_out_params = []
@@ -479,6 +481,8 @@ class SignalProcessor:
                 # normalized_param = param_dict[param_name] / max(np.abs([self.dbgain_min, self.dbgain_max]))
                 if normalized_param is not None:
                     list_out_params.append(normalized_param)
+                else:
+                    raise Exception(f"normalized_param is None for param_name {param_name} and param_dict {param_dict}")
         return list_out_params
 
     #########################################>> load_data_for_training <<##############################################
@@ -627,7 +631,7 @@ class SignalProcessor:
 
         # copy the params for all channels to the processed signals folder
         copyfile("params_preproc.py", os.path.join(self.processed_signals_root_folder, f"params-preproc-{today}.txt"))
-    def load_labels_metadata_for_training(self, training_data_folder, norm_type='0,1'):
+    def UNUSED_load_labels_metadata_for_training(self, training_data_folder, norm_type='0,1'):
         """
         This function loads the metadata from the processed signals and normalizes it based on the param limits
         in the self of  this class.
