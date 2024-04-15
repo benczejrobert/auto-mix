@@ -36,6 +36,15 @@ dict_normalization_values = { "dbgain_min": -40,
                               "freq_max": 20000,
                               "resonance_min": 0,
                               "resonance_max": 10}
+dict_params_order = {
+    "1_high_pass": ["cutoff", "resonance"],
+    "2_low_shelf": ["cutoff", "resonance", "dbgain"],
+    "3_peak1": ["center", "resonance", "dbgain"],
+    "4_peak2": ["center", "resonance", "dbgain"],
+    "5_low_pass": ["cutoff", "resonance"],
+    "6_high_shelf": ["cutoff", "resonance", "dbgain"]
+
+}
 
 # Change this to the number of filters you want to use or None
 # to use all possible combinations of filters, any number of filters.
