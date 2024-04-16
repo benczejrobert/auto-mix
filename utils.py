@@ -1,6 +1,49 @@
 from imports import *
+from params_preproc import *
 
+def denormalize_params(denorm_me, dn_dict_params_order=dict_params_order,
+                       dict_norm_values=dict_normalization_values,
+                       norm_type='0,1'):
+    """
 
+    :param denorm_me: np.array
+    :param dn_dict_params_order:
+    :param dict_norm_values:
+    :param norm_type: '0,1' or '-1,1' or '-1, 1 max abs'
+    :return:
+    """
+    if not isinstance(denorm_me, np.ndarray):
+        raise ValueError("denorm_me should be a numpy array")
+
+    list_denorm_min = []
+    list_denorm_max = []
+    for filter in dn_dict_params_order:
+        for param in dn_dict_params_order[filter]:
+            if param in ["cutoff", "center"]:
+                list_denorm_min.append(dict_norm_values["freq_min"])
+                list_denorm_max.append(dict_norm_values["freq_max"])
+            elif param == "resonance":
+                list_denorm_min.append(dict_norm_values["resonance_min"])
+                list_denorm_max.append(dict_norm_values["resonance_max"])
+            elif param == "dbgain":
+                list_denorm_min.append(dict_norm_values["dbgain_min"])
+                list_denorm_max.append(dict_norm_values["dbgain_max"])
+
+    print(f"{debugger_details()} list_denorm_min", list_denorm_min)
+    print(f"{debugger_details()} list_denorm_max", list_denorm_max)
+    list_denorm_min = np.array(list_denorm_min[0:denorm_me.shape[-1]])
+    list_denorm_max = np.array(list_denorm_max[0:denorm_me.shape[-1]])
+    # TODO check width of denorm_me and slice list_denorm_min and list_denorm_max accordingly
+    # check which axis should be processed from denorm_me
+
+    if norm_type == '0,1':
+        denorm_me = denorm_me * (list_denorm_max - list_denorm_min) + list_denorm_min
+        # denorm_me = denorm_me * (list_denorm_max - list_denorm_min) + list_denorm_min
+    elif norm_type == '-1,1':
+        denorm_me = (denorm_me + 1) * (list_denorm_max - list_denorm_min) / 2 + list_denorm_min
+    elif norm_type == '-1, 1 max abs':
+        denorm_me = denorm_me * np.max(np.abs(list_denorm_max),np.abs(list_denorm_min))
+    return denorm_me
 def create_test_npy(path, scaler):
     """Creates x_test and y_test (true labels) from .npy files"""
     x_test, y_true = [], []

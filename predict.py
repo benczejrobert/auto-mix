@@ -1,3 +1,4 @@
+from params_preproc import *
 from utils import *
 def run_predict(path_test, inst_feature_scalers, # save_results, respath,
             latest_model = True):
@@ -20,12 +21,21 @@ def run_predict(path_test, inst_feature_scalers, # save_results, respath,
         # window_length, overlap, non_windowed_db all None, remove them
         x_test, y_true = create_test_npy(os.path.join(path_test, channel_folder), scaler)
         y_pred = model.predict(x_test)
-        print(f"{debugger_details()} y_pred = ",y_pred)
-        print(f"{debugger_details()} y_true = ",y_true)
         print('MAX',(np.max(y_pred - y_true)))
-        # TODO unscale y_pred
+        print('flatten',(y_pred - y_true).flatten())
+        y_pred_denor = denormalize_params(y_pred)
+        print(f"y_pred_denor {debugger_details()}  = ")
+        y_true_denor = denormalize_params(y_true)
+        for row_i in range(len(y_pred_denor)):
+            print(y_pred_denor[row_i].tolist())
+            print(y_true_denor[row_i].tolist())
+            print('---')
+        # TODO implement metrics as well
+            #for instance, histogram of errors for each parameter or for entire test set
+            #or most frequent error for each parameter and its frequency. maybe also for entire test set
+            # average of the difference between the actual value and the predicted one
 
-        # TODO unscale y_true
+            # also r2 score
 
         # TODO implement the following functions
         # if save_results:
