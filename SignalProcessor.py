@@ -423,13 +423,14 @@ class SignalProcessor:
         """
 
         :rtype: numeric or np.array
+        @RB20240415 repaired max abs p_max to np.max and changed abs to np.abs
         """
         if norm_type == '0,1':
-            return (x - p_min) / abs(p_max - p_min)
+            return (x - p_min) / np.abs(p_max - p_min)
         if norm_type == '-1,1':
-            return (x - p_min) / abs(p_max - p_min) * 2 - 1
+            return (x - p_min) / np.abs(p_max - p_min) * 2 - 1
         if norm_type == '-1, 1 max abs':
-            return x / p_max(np.abs([p_min, p_max]))
+            return x / np.max(np.abs([p_min, p_max]))
 
     def _normalize_params(self, dict_params, normalize_type='0,1'):
         """
