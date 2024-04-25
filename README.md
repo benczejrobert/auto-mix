@@ -1,4 +1,4 @@
-Folder with data: https://drive.google.com/drive/folders/18j7PVTl0-DfWDNRXMmLzGaBgetMfpfJh \
+Folder with data: https://drive.google.com/drive/folders/18j7PVTl0-DfWDNRXMmLzGaBgetMfpfJh 
 
 
 # Automatic drum mixing using deep learning\
