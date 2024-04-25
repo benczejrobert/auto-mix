@@ -1,7 +1,7 @@
 Folder with data: https://drive.google.com/drive/folders/18j7PVTl0-DfWDNRXMmLzGaBgetMfpfJh 
 
 
-# Automatic drum mixing using deep learning\
+# Automatic drum mixing using deep learning
 \
 This is an ongoing project aims to create a drum mixing tool using deep learning. \
 The tool will take a multitrack recording as input and output the suggested parameters for each track. \
