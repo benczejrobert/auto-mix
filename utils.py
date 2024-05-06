@@ -1,6 +1,144 @@
 from imports import *
 from params_preproc import *
 
+def hist_errors(y_pred, y_true, filter_params, model_name):
+    """
+    Returns a histogram of errors for each parameter or for entire test set
+    """
+
+    if len(y_pred) != len(y_true) != 2:
+        raise ValueError(f"{debugger_details()} y_pred and y_true should be of the same length and equal to 2")
+    y_diff = y_pred - y_true
+
+    param_names = []
+    for filter in filter_params:
+        for param in dict_params_order[filter]:
+            param_names.append(f"{filter}_{param}")
+    # get unique values per columns
+    # unique_values = [np.unique(y_diff[:,i]) for i in range(y_diff.shape[-1])]
+    create_histograms_2d_array(y_diff, param_names, model_name)
+
+#deprecated
+def create_histograms_2d_array_v1(array, param_names, model_name):
+    num_cols = array.shape[1]
+
+    for col_index in range(num_cols):
+        column_data = array[:, col_index]
+        unique_values, value_counts = np.unique(column_data, return_counts=True)
+
+        # Create a range of indices for the unique values
+        indices = np.arange(len(unique_values))
+        print("col index", col_index)
+        # Create a new figure for each histogram
+        plt.figure()
+        # Create histogram for unique values
+        plt.bar(indices, value_counts, edgecolor='black')
+        plt.title(f'Hist of model {model_name} \n'
+                  f'Params {param_names[col_index]}')
+        plt.xlabel('Value')
+        plt.ylabel('Frequency')
+        plt.gca().xaxis.set_major_formatter(FormatStrFormatter('%.3f')) # still not working, strings are too long
+        plt.xticks(indices, unique_values)  # Set x-axis ticks to unique values
+        plt.show()
+
+# deprecated
+def create_histograms_2d_array_v0(array,param_names):
+    num_cols = array.shape[1]
+
+    for col_index in range(num_cols):
+        column_data = array[:, col_index]
+        unique_values, value_counts = np.unique(column_data, return_counts=True)
+
+        # Sort unique values and value counts based on unique values
+        sorted_indices = np.argsort(unique_values)
+        unique_values = unique_values[sorted_indices]
+        value_counts = value_counts[sorted_indices]
+
+        # Create histogram for unique values
+        plt.figure()
+        plt.bar(unique_values, value_counts, edgecolor='black')
+        plt.title(f'Hist of {param_names[col_index]}')
+        plt.xlabel('Value')
+        plt.ylabel('Frequency')
+        plt.show()
+
+def create_histograms_2d_array(array, param_names, model_name, paper = False):
+    num_cols = array.shape[1]
+    rows_cols_number = int(np.ceil(np.sqrt(num_cols)))
+    fig = make_subplots(rows=rows_cols_number,
+                        cols=rows_cols_number
+                        )
+    for col_index in range(num_cols):
+        column_data = array[:, col_index]
+        unique_values, unique_counts = np.unique(column_data, return_counts=True)
+
+        # Create a mapping from unique values to indices
+        index_to_value = dict(enumerate(unique_values))
+        # Convert unique values to indices
+        indices = list(index_to_value.keys())
+
+        # print("Column{}: ".format(col_index))
+        # print(indices)
+        # print(unique_counts)
+        # print(list(index_to_value.values()))
+        cr_row = int(col_index // np.ceil(np.sqrt(num_cols)) + 1)
+        cr_col = int(col_index % np.ceil(np.sqrt(num_cols)) + 1)
+        fig.add_trace(go.Bar(x=indices, y=unique_counts, name=f'Column {col_index}'),
+                      row=cr_row,
+                      col=cr_col
+                      )
+
+        # Set the tick labels on the x-axis to be the unique values
+        fig.update_xaxes(tickvals=indices,
+                         ticktext=list(index_to_value.values()),
+                         showticklabels=False, # TODO maybe format this to show only 2-3 decimals or so
+                         row=cr_row,
+                         col=cr_col
+                         )
+        if paper:
+            fig.add_annotation(
+                text=f'Hist of model {model_name} \n Params {param_names[col_index]}',
+                xref='paper',
+                yref='paper',
+                # xref=f'x{col_index + 1}',
+                # yref=f'y{col_index + 1}',
+                showarrow=False,
+                font=dict(size=10),
+                xanchor='left',
+                yanchor='top',
+                # x=(cr_col - 1) / rows_cols_number, # either calculate these based on the normalized coords with xref and yref paper
+                # y=cr_row / rows_cols_number,# or use the col_index refs AND calculate relative position based on the values in the histogram
+                x= (cr_col - 1) / rows_cols_number,
+                y=1 - ((cr_row - 1) / rows_cols_number), # (0,0) of paper is bottom left not top left
+                yshift=10
+            )
+        else:
+            fig.add_annotation(
+                text=f'Params {param_names[col_index]}',
+                xref=f'x{col_index + 1}',
+                yref=f'y{col_index + 1}',
+                showarrow=False,
+                font=dict(size=10),
+                xanchor='left',
+                yanchor='bottom',
+                x=min(indices),  # calculate these based on the indices and unique_counts lists
+                y=max(unique_counts) + 0.1 * max(unique_counts),
+                # calculate these based on the indices and unique_counts lists
+                # yshift=30
+            )
+    fig.add_annotation(text=f"Hist of model {model_name} \n",
+                       xref='paper',
+                       yref = 'paper',
+                       showarrow=False,
+                       font = dict(size=20),
+                       xanchor = 'center',
+                       yanchor = 'bottom',
+                       x = 0.5,
+                       y = 1.05
+    )
+    fig.show(renderer='browser')
+
+
 def denormalize_params(denorm_me, dn_dict_params_order=dict_params_order,
                        dict_norm_values=dict_normalization_values,
                        norm_type='0,1'):
@@ -29,8 +167,8 @@ def denormalize_params(denorm_me, dn_dict_params_order=dict_params_order,
                 list_denorm_min.append(dict_norm_values["dbgain_min"])
                 list_denorm_max.append(dict_norm_values["dbgain_max"])
 
-    print(f"{debugger_details()} list_denorm_min", list_denorm_min)
-    print(f"{debugger_details()} list_denorm_max", list_denorm_max)
+    # print(f"{debugger_details()} list_denorm_min", list_denorm_min)
+    # print(f"{debugger_details()} list_denorm_max", list_denorm_max)
     list_denorm_min = np.array(list_denorm_min[0:denorm_me.shape[-1]])
     list_denorm_max = np.array(list_denorm_max[0:denorm_me.shape[-1]])
     # TODO check width of denorm_me and slice list_denorm_min and list_denorm_max accordingly

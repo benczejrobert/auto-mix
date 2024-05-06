@@ -6,6 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="5be8c0c6-2df8-47bd-84b6-86a71282070e" name="Changes" comment="Removed .tolist() from dtcwpt.py">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/imports.py" beforeDir="false" afterPath="$PROJECT_DIR$/imports.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/predict.py" beforeDir="false" afterPath="$PROJECT_DIR$/predict.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
     </list>
@@ -67,7 +68,7 @@
       <recent name="D:\PCON\Disertatie\AutoMixMaster\Automix-project\auto-mix" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.test-mix-console">
+  <component name="RunManager" selected="Python.hist-2d">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="auto-mix" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -104,6 +105,25 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/file-reader.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="hist-2d" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="auto-mix" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="SDK_NAME" value="py310tg210gpu" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/hist-2d.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="true" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -160,6 +180,9 @@
       <module name="auto-mix" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="SDK_NAME" value="py310tg210gpu" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
@@ -201,12 +224,14 @@
     <list>
       <item itemvalue="Python.imports" />
       <item itemvalue="Python.test_ness.py" />
+      <item itemvalue="Python.hist-2d" />
       <item itemvalue="Python.test-mix-console" />
       <item itemvalue="Python.main_tst" />
       <item itemvalue="Python.file-reader" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.hist-2d" />
         <item itemvalue="Python.test-mix-console" />
         <item itemvalue="Python.main_tst" />
         <item itemvalue="Python.file-reader" />

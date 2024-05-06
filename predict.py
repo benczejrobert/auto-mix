@@ -21,15 +21,22 @@ def run_predict(path_test, inst_feature_scalers, # save_results, respath,
         # window_length, overlap, non_windowed_db all None, remove them
         x_test, y_true = create_test_npy(os.path.join(path_test, channel_folder), scaler)
         y_pred = model.predict(x_test)
-        print('MAX',(np.max(y_pred - y_true)))
-        print('flatten',(y_pred - y_true).flatten())
+        # print('MAX',(np.max(y_pred - y_true)))
+        # print('flatten',(y_pred - y_true).flatten())
         y_pred_denor = denormalize_params(y_pred)
-        print(f"y_pred_denor {debugger_details()}  = ")
+        # print(f"y_pred_denor {debugger_details()}  = ")
         y_true_denor = denormalize_params(y_true)
-        for row_i in range(len(y_pred_denor)):
-            print(y_pred_denor[row_i].tolist())
-            print(y_true_denor[row_i].tolist())
-            print('---')
+
+        # TODO de umblat la float precision ca se incaleca xticks
+        # TODO verif de ce apar 22 figuri in loc de 11
+        hist_errors(y_pred_denor, y_true_denor, dict_params_order, model_name)
+
+
+        #TODO update hist errors with the following ideas/packages:
+        # https://www.analyticsvidhya.com/blog/2021/10/interactive-plots-in-python-with-plotly-a-complete-guide/
+        # https://www.datacamp.com/tutorial/create-histogram-plotly
+        # https://plotly.com/python/renderers/
+
         # TODO implement metrics as well
             #for instance, histogram of errors for each parameter or for entire test set
             #or most frequent error for each parameter and its frequency. maybe also for entire test set
