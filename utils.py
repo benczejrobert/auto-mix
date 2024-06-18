@@ -17,6 +17,7 @@ def hist_errors(y_pred, y_true, filter_params, model_name):
     # get unique values per columns
     # unique_values = [np.unique(y_diff[:,i]) for i in range(y_diff.shape[-1])]
     create_histograms_2d_array(y_diff, param_names, model_name)
+    # TODO also add something that specifies the sample size or how many rows were in the test set.
 
 #deprecated
 def create_histograms_2d_array_v1(array, param_names, model_name):
@@ -83,7 +84,7 @@ def create_histograms_2d_array(array, param_names, model_name, paper = False):
         # print(list(index_to_value.values()))
         cr_row = int(col_index // np.ceil(np.sqrt(num_cols)) + 1)
         cr_col = int(col_index % np.ceil(np.sqrt(num_cols)) + 1)
-        fig.add_trace(go.Bar(x=indices, y=unique_counts, name=f'Column {col_index}'),
+        fig.add_trace(go.Bar(x=indices, y=unique_counts, name=f'Param no {col_index} \n {param_names[col_index]}'),
                       row=cr_row,
                       col=cr_col
                       )
