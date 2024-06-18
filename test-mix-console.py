@@ -49,13 +49,13 @@ aas = SignalProcessor(sig_root_path, dict_norm_values=dict_normalization_values,
 
 
 # Pipeline steps params
-proc_end_to_end = False
-create_training_features = False
-split = False
+proc_end_to_end = True
+create_training_features = True
+split = True
 split_perc_train = 70
 
 # Arguments for k_fold_cross_validation (train)
-train = False
+train = True
 train_data_root = os.path.join('..', 'data', 'Train')  #[path], relative path to Train folder
 test_data_root = os.path.join('..', 'data', 'Test')  #[path], relative path to Train folder
 k = 1 #len(get_class_list(db_path))  #[int], number of folds to be performed
@@ -74,8 +74,8 @@ if not os.path.exists(os.path.split(path_model)[0]): #create Model folder if it 
 optimizer = 'adam'  #[string or tensorflow.keras.optimizers], optimizer to be used
 dropout = 0.5  #[float], between 0 and 1. Fraction of the input units to drop
 shuffle_mode = False  # [boolean], if True shuffles train and validation datasets as one dataset, else individually
-obj_feature_scalers = ChannelFeatureScalers(train_data_root)
 if proc_end_to_end:
+    # TODO add a check if the processed signals folder already contains the processed signals
     # aas.process_signal_all_variants(dict_filenames_and_process_variants) # TODO maybe add run date to the metadata or name of the processed signals
     aas.process_multiple_signals(list_settings_dict=list_dict_all_filter_settings)
 
@@ -83,16 +83,16 @@ if create_training_features:
     today = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
     feats_extractor = FeatureExtractor(feature_list, feature_dict, variance_type, raw_features, keep_feature_dims)
 
+    copyfile("params_features.py", os.path.join(extracted_features_folder, f"params-features-{today}.txt"))
     aas.create_features_diff_for_training(inst_feature_extractor=feats_extractor,
                                           bool_pre_diff=param_pre_diff, bool_process_entire_signal=True)
-    copyfile("params_features.py", os.path.join(extracted_features_folder, f"params-features-{today}.txt"))
 
 # aas.process_signal_all_variants(signal_in, {test_fname: dict_filenames_and_process_variants[test_fname]})
 # training_data = aas.load_labels_metadata_for_training(preproc_signals_root_folder)
 # path = r'F:\PCON\Disertatie\AutoMixMaster\datasets\diverse-test\white-noise.wav'
 if split:
     split_dataset(extracted_features_folder, split_perc_train) # TODO put the split paths somewhere else
-
+obj_feature_scalers = ChannelFeatureScalers(train_data_root)  # TODO needs to first check if there is data in the folder OR do the test train split before
 # scaler = None
 if train:
     # if scaler == None:
