@@ -509,9 +509,8 @@ class SignalProcessor:
         @BR20240319 Added the verb_start and verb_final parameters to the function signature.
         @BR20240406 Added in_signal_path to the function signature.
         """
-
-        for str_file_ending in asv_dict_filenames_and_process_variants:
-            # last e - unprocessed input signal name
+        total_no_variants = len(asv_dict_filenames_and_process_variants)
+        for str_file_ending in asv_dict_filenames_and_process_variants:  # TODO parallelize this for using threads. FIRST check which parts may conflict
             str_unproc_sig_name = in_signal_path.split(os.sep)[-1].split(".")[0]
             procvars_folder_name = str_unproc_sig_name
             # sig_ext not used because .wav is in the so-called pre_extension
@@ -522,7 +521,7 @@ class SignalProcessor:
 
             crt_file_name = "_".join([str_unproc_sig_name,
                                                    str_file_ending])
-            print(f"process_signal_all_variants() Processing signal {crt_file_name}...")
+            print(f"process_signal_all_variants() Processing signal {crt_file_name}/{total_no_variants}...")
             crt_file_path = os.sep.join([crt_procvars_folder,
                                          crt_file_name])
             # for filter_type in dict_filenames_and_process_variants[filename]: # added
@@ -608,15 +607,16 @@ class SignalProcessor:
         signal_paths = sorted(os.listdir(self.in_signal_path))  # Ensure same order every run (if no naming changes)
         #  Associate the path of the signal with the filter settings. The signal folder is the key.
         try:
+            # TODO maybe the settings list should be ordered first so it matches the signal paths
             signal_procs = dict((np.array((signal_paths, list_settings_dict)).T))
         except Exception as e:
             raise Exception(f"--- {debugger_details()} Error in associating the signal with the filter settings. ---\n"
                             f"--- Error: {e} ---")
+            # copy the params for all channels to the processed signals folder
+        copyfile("params_preproc.py",os.path.join(self.processed_signals_root_folder, f"params-preproc-{today}.txt"))
         for crt_signal_folder in signal_procs.keys():
-            print(f"--- {debugger_details()} Processing signal: {crt_signal_folder} ---")
-            print(f"--- {debugger_details()} Filter settings: {signal_procs[crt_signal_folder]} ---")
             dict_all_filter_settings = signal_procs[crt_signal_folder]
-            crt_signal_path = os.path.join(self.in_signal_path, crt_signal_folder)
+            crt_signal_path = os.path.join(self.in_signal_path, crt_signal_folder) # TODO these dont look like folders but rather signals
             # load current signal
             self._load_signal(crt_signal_path, self.resample_to)
             no_filters = len(dict_all_filter_settings)
@@ -625,14 +625,13 @@ class SignalProcessor:
             #  the list of list_dict_all_filter_settings in params_preproc.py
             dict_filenames_and_process_variants = self.create_end_to_end_all_proc_vars_combinations(dict_all_filter_settings,
                                                                                                     root_filename="eq_ed",
-                                                                                                    start_index=0,
+                                                                                                    start_index=param_start_index,
                                                                                                     end_index=None,
                                                                                                     number_of_filters=no_filters)
             # TODO maybe add run date to the metadata or name of the processed signals
             self.process_signal_all_variants(crt_signal_path, dict_filenames_and_process_variants)
 
-        # copy the params for all channels to the processed signals folder
-        copyfile("params_preproc.py", os.path.join(self.processed_signals_root_folder, f"params-preproc-{today}.txt"))
+
     def UNUSED_load_labels_metadata_for_training(self, training_data_folder, norm_type='0,1'):
         """
         This function loads the metadata from the processed signals and normalizes it based on the param limits
@@ -689,7 +688,6 @@ class SignalProcessor:
             # load the processed signals
             if crt_file.endswith(".wav"):
                 crt_file_path = os.path.join(processed_audio_folder, crt_file)
-                # print(f"{debugger_details()} crt_file_path", crt_file_path)
                 crt_signal, rate = librosa.load(crt_file_path, sr=self.rate)
                 metadata = self.read_metadata(crt_file_path)
                 list_normed_params = np.array(self._normalize_params(metadata, norm_type)).astype("float32")
