@@ -49,7 +49,7 @@ aas = SignalProcessor(sig_root_path, dict_norm_values=dict_normalization_values,
 
 
 # Pipeline steps params
-proc_end_to_end = True
+proc_end_to_end = False
 create_training_features = True
 split = True
 split_perc_train = 70
