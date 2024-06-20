@@ -10,7 +10,7 @@ from params_preproc import *
 
 extracted_features_folder = "..\\data\\features-latest"
 
-feature_dict = {'sr': sample_rate, 'n_fft': 4096, 'n_mfcc': 26, 'hop_length': 512, 'margin': 3.0, 'n_lvls':5,'wavelet_type':'db1'}
+feature_dict = {'sr': sample_rate, 'n_fft': 2048, 'n_mfcc': 26, 'hop_length': 512, 'margin': 3.0, 'n_lvls':5,'wavelet_type':'db1'}
 # feature_list = ['mfcc'] # ['spect', 'mel_spect']
 feature_list = ['fft'] # ['spect', 'mel_spect']
 # feature_list = ['cepstrum'] # ['spect', 'mel_spect']
