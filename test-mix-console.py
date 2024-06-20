@@ -74,16 +74,19 @@ if not os.path.exists(os.path.split(path_model)[0]): #create Model folder if it 
 optimizer = 'adam'  #[string or tensorflow.keras.optimizers], optimizer to be used
 dropout = 0.5  #[float], between 0 and 1. Fraction of the input units to drop
 shuffle_mode = False  # [boolean], if True shuffles train and validation datasets as one dataset, else individually
+
+
+if create_training_features:  # TODO make this into a function of (filename, root_to_move_to, bool_for_pipeline_stage)
+    today = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
+    copyfile("params_features.py", os.path.join(extracted_features_folder, f"params-features-{today}.txt"))
+
 if proc_end_to_end:
     # TODO add a check if the processed signals folder already contains the processed signals
     # aas.process_signal_all_variants(dict_filenames_and_process_variants) # TODO maybe add run date to the metadata or name of the processed signals
     aas.process_multiple_signals(list_settings_dict=list_dict_all_filter_settings)
 
 if create_training_features:
-    today = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
     feats_extractor = FeatureExtractor(feature_list, feature_dict, variance_type, raw_features, keep_feature_dims)
-
-    copyfile("params_features.py", os.path.join(extracted_features_folder, f"params-features-{today}.txt"))
     aas.create_features_diff_for_training(inst_feature_extractor=feats_extractor,
                                           bool_pre_diff=param_pre_diff, bool_process_entire_signal=True)
 
