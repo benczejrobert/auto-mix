@@ -1,5 +1,11 @@
 small_no = 1e-320 # delay for unicity of timestamps
 
+# TODO add logarithmic penalty for the frequency parameters, maybe for db gain too (depending on the range of errors)
+# TODO add r2 metrics and MSE and others for the evaluation of the model
+
+
+# TODO check how to do gaussian sampling fo generate data && how to send this into a DAW maybe
+
 # Signal (pre)processor
 
 # sig_root_path = "D:\\PCON\\Disertatie\\AutoMixMaster\\datasets\\diverse-test\\white-noise-mono.wav"
@@ -12,7 +18,7 @@ sig_root_path = "..\\data\\raw-audio\\"
 # todo here will be a subfolder structure for each drum channel
 preproc_signals_root_folder = "..\\data\\processed-audio-latest"
 sample_rate = 22050
-# TODO when multiple channels will be added, this dict can be added to a list of dicts, one for each channel
+# TODO make start index a list so u can choose it for each channel
 param_start_index = 0  # left at 65613 for commented generic params Moro
 
 # Usage tips: You need to add numbers at the end of every signal processing type, because
@@ -61,24 +67,37 @@ general_gain_interval = [-9, -5, 0, 5, 9]  # checkif any gains lower than -12 in
 kick_hp_freq = list(range(30, 101, 15))
 kick_hp_freq.extend(range(150, 251, 50))
 
-kick_p1_freq = list(range(50, 351, 50))  # does not cover the kick's peak
+kick_p1_freq = list(range(50, 351, 50))
 
 kick_p2_freq = list(range(400, 801,100))
 
+### snr-specific params
 
+snr_hp_freq = list(range(100, 341, 60))
 
+snr_p1_freq = list(range(400, 801,100))
 
+snr_p2_freq = list(range(4000, 9300,900))
 
+# elements will correspond to the sorted() files in the raw-audio folder
 list_dict_all_filter_settings = [
-{  # kick frequency settings
-    "high_pass": {"cutoff": kick_hp_freq, "resonance": [0.5]},
-    "low_shelf": {"cutoff": general_ls_freq, "resonance": general_q_interval, "dbgain": general_gain_interval},
-    "peak1": {"center": kick_p1_freq, "resonance": general_q_interval, "dbgain": general_gain_interval},
-    "peak2": {"center": kick_p2_freq, "resonance": general_q_interval, "dbgain": general_gain_interval},
-    "low_pass": {"cutoff": [20000], "resonance": [0.5]},  # maybe ignore for the purpose of the kick in and snr top
-    "high_shelf": {"cutoff": [20000], "resonance": [1], "dbgain": [0]}  # maybe ignore for the purpose of the kick in and snr top. TODO decrease the sr threshold
-},  # for kick in and snr top. sunt ignorate bine peste 10k, deci resample ok
-] * 2
+    {  # kick frequency settings
+        "high_pass": {"cutoff": kick_hp_freq, "resonance": [0.5]},
+        "low_shelf": {"cutoff": general_ls_freq, "resonance": general_q_interval, "dbgain": general_gain_interval},
+        "peak1": {"center": kick_p1_freq, "resonance": general_q_interval, "dbgain": general_gain_interval},
+        "peak2": {"center": kick_p2_freq, "resonance": general_q_interval, "dbgain": general_gain_interval},
+        "low_pass": {"cutoff": [20000], "resonance": [0.5]},  # maybe ignore for the purpose of the kick in and snr top
+        "high_shelf": {"cutoff": [20000], "resonance": [1], "dbgain": [0]}  # maybe ignore for the purpose of the kick in and snr top. TODO decrease the sr threshold
+    },  # for kick in and snr top. nu sunt filtre peste 10k in reaper, deci resample ok.  840k files
+    {  # snare frequency settings
+        "high_pass": {"cutoff": snr_hp_freq, "resonance": [0.5]},
+        "low_shelf": {"cutoff": general_ls_freq, "resonance": general_q_interval, "dbgain": general_gain_interval},
+        "peak1": {"center": snr_p1_freq, "resonance": general_q_interval, "dbgain": general_gain_interval},
+        "peak2": {"center": snr_p2_freq, "resonance": general_q_interval, "dbgain": general_gain_interval},
+        "low_pass": {"cutoff": [20000], "resonance": [0.5]},  # maybe ignore for the purpose of the kick in and snr top
+        "high_shelf": {"cutoff": [20000], "resonance": [1], "dbgain": [0]}  # maybe ignore for the purpose of the kick in and snr top. TODO decrease the sr threshold
+    }  # 450k files
+]
 
 dict_normalization_values = { "dbgain_min": -40,
                               "dbgain_max": 40,
