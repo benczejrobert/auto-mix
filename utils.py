@@ -5,7 +5,7 @@ def hist_errors(y_pred, y_true, filter_params, model_name):
     """
     Returns a histogram of errors for each parameter or for entire test set
     """
-
+    # TODO see how u can do this metric even better to like say at which real value this error happens (or do some scaling to the real values)
     if len(y_pred) != len(y_true) != 2:
         raise ValueError(f"{debugger_details()} y_pred and y_true should be of the same length and equal to 2")
     y_diff = y_pred - y_true
@@ -434,7 +434,7 @@ def create_model(data = np.array([[[1,2,3],[1,2,3]]]), no_classes = 3, optimizer
         print(model.summary())
 
     # model.compile(optimizer=optimizer, loss=tf.keras.losses.categorical_crossentropy, metrics=['accuracy'])
-    model.compile(optimizer=optimizer, loss=tf.keras.losses.MeanSquaredError(), metrics=['mean_squared_error']) # MSE or MAE
+    model.compile(optimizer=optimizer, loss=tf.keras.losses.MeanSquaredError(), metrics=['mean_squared_error', 'r2_score', 'mean_absolute_error']) # MSE or MAE
     return model
 
 
