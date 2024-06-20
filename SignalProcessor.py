@@ -604,6 +604,7 @@ class SignalProcessor:
 
         #
         today = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
+        # TODO in_signals_root can also be a file sometimes. Check if it's a folder or a file.
         signal_paths = sorted(os.listdir(self.in_signals_root))  # Ensure same order every run (if no naming changes)
         #  Associate the path of the signal with the filter settings. The signal folder is the key.
         try:
@@ -684,8 +685,8 @@ class SignalProcessor:
         if process_entire_signal:
             obj_feature_extractor.features_dict["hop_length"] = len(self.signal) + 1
 
-        # Treload the self.signal otherwise it can be the last signal from the preprocessing
-        crt_signal_path = f"{os.path.split(processed_audio_folder)[-1]}.wav"
+        # Reload the self.signal otherwise it can be the last signal from the preprocessing
+        crt_signal_path = f"{self.in_signals_root}{os.path.split(processed_audio_folder)[-1]}.wav"
         self._load_signal(crt_signal_path, self.resample_to)
         for crt_file in sorted(os.listdir(processed_audio_folder)):
             print(f"\t--- Creating training features for: {crt_file} ---")
@@ -702,13 +703,8 @@ class SignalProcessor:
                     signal_diff = self.signal - crt_signal  # assuming rate was equal for all signals
                     # extract the features
                     diff_features = obj_feature_extractor.extract_features(signal_diff)
-                    print(f"--- {debugger_details()} loaded rate = {rate} ---")
-                    print(f"--- {debugger_details()} loaded signal rate = {self.rate} ---")
-                    print(f"--- {debugger_details()} loaded signal in_signals_root = {self.in_signals_root} ---")
-                    raise Exception(f"--- {debugger_details()} stop")
                 # difference after features extracted
                 else:
-                    raise Exception(f"--- {debugger_details()} stop post-diff")
                     output_file_path = os.path.join(features_path, f"diff_features_and_params_{crt_file.split('.')[0]}.npy")
                     # extract the features
                     features_in_signal = obj_feature_extractor.extract_features(self.signal)
@@ -734,7 +730,6 @@ class SignalProcessor:
                 if os.path.isdir(procsig_crt_path):
                     if not os.path.exists(feats_crt_path):
                         os.mkdir(feats_crt_path)
-                    print(f"--- Processing features in folder: {feats_crt_path} ---")
                     self.create_features_diff_for_training_single_signal(procsig_crt_path,feats_crt_path,
                                                                          inst_feature_extractor,
                                                                          bool_pre_diff, bool_process_entire_signal)
