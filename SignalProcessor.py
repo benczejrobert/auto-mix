@@ -41,20 +41,20 @@ class SignalProcessor:
         :param resample_to:
         @BR20240309 Added the rate parameter and self signal to the class.
         @BR20240313 Added the preproc_signals_root_folder parameter to the class.
-        @BR20240406 Modified in_signal_path to be a folder path or a file path.
+        @BR20240406 Modified in_signals_root to be a folder path or a file path.
         """
 
         # TODO ask Moro for these values & modify them
         #  These values should be declared somewhere globally like in a class of some sort.
 
-        # TODO in_signal_path and preproc_signals_root_folder should be
+        # TODO in_signals_root and preproc_signals_root_folder should be
         #  declared somewhere globally like in a class of some sort.
         # normalization values
         for key, value in dict_norm_values.items():
             setattr(self, key, value)
 
         # paths
-        self.in_signal_path = in_signal_path
+        self.in_signals_root = in_signal_path
         self.processed_signals_root_folder = processed_signals_root_folder
         self.features_folder = features_folder
         self.resample_to = resample_to
@@ -507,21 +507,21 @@ class SignalProcessor:
         @BR20240309 Added the normalize parameter to the function signature.
         Also removed the asv_signal_in parameter and instead called from self.
         @BR20240319 Added the verb_start and verb_final parameters to the function signature.
-        @BR20240406 Added in_signal_path to the function signature.
+        @BR20240406 Added in_signals_root to the function signature.
         """
         total_no_variants = len(asv_dict_filenames_and_process_variants)
         for str_file_ending in asv_dict_filenames_and_process_variants:  # TODO parallelize this for using threads. FIRST check which parts may conflict
             str_unproc_sig_name = in_signal_path.split(os.sep)[-1].split(".")[0]
             procvars_folder_name = str_unproc_sig_name
             # sig_ext not used because .wav is in the so-called pre_extension
-            # sig_ext = self.in_signal_path.split(os.sep)[-1].split(".")[-1]  # last e - signal extension
+            # sig_ext = self.in_signals_root.split(os.sep)[-1].split(".")[-1]  # last e - signal extension
             crt_procvars_folder = os.sep.join([self.processed_signals_root_folder, procvars_folder_name])
             if not os.path.exists(crt_procvars_folder):
                 os.mkdir(crt_procvars_folder)
 
             crt_file_name = "_".join([str_unproc_sig_name,
                                                    str_file_ending])
-            print(f"process_signal_all_variants() Processing signal {crt_file_name}/{total_no_variants}...")
+            print(f"\t process_signal_all_variants() Processing signal {crt_file_name}/{total_no_variants}...")
             crt_file_path = os.sep.join([crt_procvars_folder,
                                          crt_file_name])
             # for filter_type in dict_filenames_and_process_variants[filename]: # added
@@ -604,7 +604,7 @@ class SignalProcessor:
 
         #
         today = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
-        signal_paths = sorted(os.listdir(self.in_signal_path))  # Ensure same order every run (if no naming changes)
+        signal_paths = sorted(os.listdir(self.in_signals_root))  # Ensure same order every run (if no naming changes)
         #  Associate the path of the signal with the filter settings. The signal folder is the key.
         try:
             # TODO maybe the settings list should be ordered first so it matches the signal paths
@@ -616,7 +616,7 @@ class SignalProcessor:
         copyfile("params_preproc.py",os.path.join(self.processed_signals_root_folder, f"params-preproc-{today}.txt"))
         for crt_signal_folder in signal_procs.keys():
             dict_all_filter_settings = signal_procs[crt_signal_folder]
-            crt_signal_path = os.path.join(self.in_signal_path, crt_signal_folder) # TODO these dont look like folders but rather signals
+            crt_signal_path = os.path.join(self.in_signals_root, crt_signal_folder) # TODO these dont look like folders but rather signals
             # load current signal
             self._load_signal(crt_signal_path, self.resample_to)
             no_filters = len(dict_all_filter_settings)
@@ -629,6 +629,7 @@ class SignalProcessor:
                                                                                                     end_index=None,
                                                                                                     number_of_filters=no_filters)
             # TODO maybe add run date to the metadata or name of the processed signals
+            print(f"--- Processing signal {crt_signal_path} ---")
             self.process_signal_all_variants(crt_signal_path, dict_filenames_and_process_variants)
 
 
@@ -683,6 +684,9 @@ class SignalProcessor:
         if process_entire_signal:
             obj_feature_extractor.features_dict["hop_length"] = len(self.signal) + 1
 
+        # Treload the self.signal otherwise it can be the last signal from the preprocessing
+        crt_signal_path = f"{os.path.split(processed_audio_folder)[-1]}.wav"
+        self._load_signal(crt_signal_path, self.resample_to)
         for crt_file in sorted(os.listdir(processed_audio_folder)):
             print(f"\t--- Creating training features for: {crt_file} ---")
             # load the processed signals
@@ -698,8 +702,13 @@ class SignalProcessor:
                     signal_diff = self.signal - crt_signal  # assuming rate was equal for all signals
                     # extract the features
                     diff_features = obj_feature_extractor.extract_features(signal_diff)
+                    print(f"--- {debugger_details()} loaded rate = {rate} ---")
+                    print(f"--- {debugger_details()} loaded signal rate = {self.rate} ---")
+                    print(f"--- {debugger_details()} loaded signal in_signals_root = {self.in_signals_root} ---")
+                    raise Exception(f"--- {debugger_details()} stop")
                 # difference after features extracted
                 else:
+                    raise Exception(f"--- {debugger_details()} stop post-diff")
                     output_file_path = os.path.join(features_path, f"diff_features_and_params_{crt_file.split('.')[0]}.npy")
                     # extract the features
                     features_in_signal = obj_feature_extractor.extract_features(self.signal)
