@@ -239,8 +239,15 @@ def train_model(model, train_dataset, val_dataset, batch_size, epochs, path_mode
     # model.fit(x=train_dataset[0].astype('float32'), y=train_dataset[1].astype('float32'),
     #           validation_data=(val_dataset[0].astype('float32'), val_dataset[1].astype('float32')),
     #           batch_size=batch_size, epochs=epochs, verbose=2, callbacks=get_callbacks(path_model=path_model))
-
-class MultiDim_MinMaxScaler():
+inp = tf.keras.layers.Input(shape=(28,28,1))    
+hdn= tf.keras.layers.Conv2D(64, (3,3), activation='relu')(inp)
+hdn = tf.keras.layers.Conv2D(32, (3,3), activation='relu')(hdn)
+hdn = tf.keras.layers.Flatten()(hdn)
+hdn = tf.keras.layers.Dense(256, activation='relu')(hdn)
+hdn = tf.keras.layers.Dense(128, activation='relu')(hdn)
+hdn = tf.keras.layers.Dense(32, activation='relu')(hdn)
+hdn = tf.keras.layers.Dense(10, activation='softmax')(hdn)
+model = tf.keras.models.Model(inputs=inp, outputs=hdn)
     def __init__(self):
         self.min = None
         self.max = None
@@ -293,6 +300,8 @@ def compute_scaler(data_path, with_mean=True, scaler_type='maxabs'):
     Output:
         - scaler [a fitted sklearn.preprocessing scaler]
         Can be Standard -> [mean - 3*sigma, mean + 3*sigma] , MinMax -> default [0,1]  or MaxAbs -> [-1,1]
+
+    @BR20240620: partial_fit was used instead of fit because
     """
     X = []
     if scaler_type not in ['standard', 'minmax', 'maxabs']:
@@ -309,8 +318,9 @@ def compute_scaler(data_path, with_mean=True, scaler_type='maxabs'):
     if "Train" in data_path:
         paths = [data_path, data_path.replace("Train","Test")]
     for path in paths:
-        channel_folders = sorted(os.listdir(path))
-        for file in channel_folders:
+        list_of_files = sorted(os.listdir(path))
+        for file in list_of_files:
+            print(f" --- compute_scaler() reached path and file: {path, file} --- ")
             # print(f"{debugger_details()} pathology: {pathology}")
             # files = sorted(os.listdir(os.path.join(path, pathology)))
             npy = np.load(os.path.join(path, file), allow_pickle=True)  # this contains the features and the labels. get only features
@@ -323,12 +333,13 @@ def compute_scaler(data_path, with_mean=True, scaler_type='maxabs'):
                         scaler = MultiDim_MaxAbsScaler()  # if standard scale or maxabs [-1,1]
             except:  # 1st element is a scalar, scalars have no len()
                 pass
-            if len(npy.shape) < 2:
-                X.append(npy)
-            else:
-                X.extend(npy)
+            # if len(npy.shape) < 2:
+            #     X.append(npy)
+            # else:
+            #     X.extend(npy)
 
-    scaler.fit(X)
+            scaler.partial_fit([npy])
+    # scaler.fit(X) # partial_fit() for large datasets
 
     return scaler
 

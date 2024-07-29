@@ -423,7 +423,7 @@ class SignalProcessor:
         """
 
         :rtype: numeric or np.array
-        @RB20240415 repaired max abs p_max to np.max and changed abs to np.abs
+        @BR20240415 repaired max abs p_max to np.max and changed abs to np.abs
         """
         if norm_type == '0,1':
             return (x - p_min) / np.abs(p_max - p_min)

@@ -35,6 +35,9 @@ from predict import *
 #       1) the diff maker will be used on the signal
 #       2) extract features from the diff
 
+# TODO look up Disentangle Metric for Informativeness (DCI RF
+# Expl) [20] as disentanglement metrics. DCIMIG - paper https://arxiv.org/pdf/2211.02247
+
 # TODO maybe add a functionality that allows the user to limit the duration of
 #  the input signal to like... 2-3-5 min whatever
 
@@ -50,8 +53,8 @@ aas = SignalProcessor(sig_root_path, dict_norm_values=dict_normalization_values,
 
 # Pipeline steps params
 proc_end_to_end = False
-create_training_features = True
-split = True
+create_training_features = False
+split = False
 split_perc_train = 70
 
 # Arguments for k_fold_cross_validation (train)
@@ -96,6 +99,7 @@ if create_training_features:
 if split:
     split_dataset(extracted_features_folder, split_perc_train) # TODO put the split paths somewhere else
 obj_feature_scalers = ChannelFeatureScalers(train_data_root)  # TODO needs to first check if there is data in the folder OR do the test train split before
+# TODO scaler takes too long to compute. maybe load files one by one and get their statistical params like min and max or so
 # scaler = None
 if train:
     # if scaler == None:

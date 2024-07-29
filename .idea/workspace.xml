@@ -6,8 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="5be8c0c6-2df8-47bd-84b6-86a71282070e" name="Changes" comment="Removed .tolist() from dtcwpt.py">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SignalProcessor.py" beforeDir="false" afterPath="$PROJECT_DIR$/SignalProcessor.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/imports.py" beforeDir="false" afterPath="$PROJECT_DIR$/imports.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/predict.py" beforeDir="false" afterPath="$PROJECT_DIR$/predict.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test-mix-console.py" beforeDir="false" afterPath="$PROJECT_DIR$/test-mix-console.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -45,9 +46,9 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/PCON/Disertatie/AutoMixMaster/Automix-project/auto-mix&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/PCON/Disertatie/AutoMixMaster/helpers/FxNorm-automix-main&quot;,
     &quot;run.code.analysis.last.selected.profile&quot;: &quot;aDefault&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.github.copilot.settings.ApplicationConfigurable&quot;
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
 }</component>
   <component name="PyConsoleOptionsProvider">
@@ -68,9 +69,10 @@
       <recent name="D:\PCON\Disertatie\AutoMixMaster\Automix-project\auto-mix" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.hist-2d">
+  <component name="RunManager" selected="Python.test-mix-console">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="auto-mix" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -93,6 +95,7 @@
     </configuration>
     <configuration name="file-reader" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="auto-mix" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -115,8 +118,12 @@
     </configuration>
     <configuration name="hist-2d" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="auto-mix" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="SDK_NAME" value="py310tg210gpu" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
@@ -134,6 +141,7 @@
     </configuration>
     <configuration name="imports" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
       <module name="auto-mix" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -156,6 +164,7 @@
     </configuration>
     <configuration name="main_tst" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="auto-mix" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -176,8 +185,32 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="plot-test-hist-2d" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="auto-mix" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="SDK_NAME" value="py310tg210gpu" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/plot-test-hist-2d.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="test-mix-console" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="auto-mix" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -200,6 +233,7 @@
     </configuration>
     <configuration name="test_ness.py" type="PythonConfigurationType" factoryName="Python">
       <module name="auto-mix" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -224,6 +258,7 @@
     <list>
       <item itemvalue="Python.imports" />
       <item itemvalue="Python.test_ness.py" />
+      <item itemvalue="Python.plot-test-hist-2d" />
       <item itemvalue="Python.hist-2d" />
       <item itemvalue="Python.test-mix-console" />
       <item itemvalue="Python.main_tst" />
@@ -231,12 +266,20 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.hist-2d" />
         <item itemvalue="Python.test-mix-console" />
+        <item itemvalue="Python.plot-test-hist-2d" />
+        <item itemvalue="Python.hist-2d" />
         <item itemvalue="Python.main_tst" />
         <item itemvalue="Python.file-reader" />
       </list>
     </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-975db3bf15a3-31b6be0877a2-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-241.18034.82" />
+      </set>
+    </attachedChunks>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">

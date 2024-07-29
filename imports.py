@@ -2,7 +2,6 @@ import os
 import sys
 import time
 import re
-import pywt
 import matplotlib.pyplot as plt
 import plotly.express as px
 from plotly.subplots import make_subplots
