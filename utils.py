@@ -239,15 +239,15 @@ def train_model(model, train_dataset, val_dataset, batch_size, epochs, path_mode
     # model.fit(x=train_dataset[0].astype('float32'), y=train_dataset[1].astype('float32'),
     #           validation_data=(val_dataset[0].astype('float32'), val_dataset[1].astype('float32')),
     #           batch_size=batch_size, epochs=epochs, verbose=2, callbacks=get_callbacks(path_model=path_model))
-inp = tf.keras.layers.Input(shape=(28,28,1))    
-hdn= tf.keras.layers.Conv2D(64, (3,3), activation='relu')(inp)
-hdn = tf.keras.layers.Conv2D(32, (3,3), activation='relu')(hdn)
-hdn = tf.keras.layers.Flatten()(hdn)
-hdn = tf.keras.layers.Dense(256, activation='relu')(hdn)
-hdn = tf.keras.layers.Dense(128, activation='relu')(hdn)
-hdn = tf.keras.layers.Dense(32, activation='relu')(hdn)
-hdn = tf.keras.layers.Dense(10, activation='softmax')(hdn)
-model = tf.keras.models.Model(inputs=inp, outputs=hdn)
+    inp = tf.keras.layers.Input(shape=(28,28,1))
+    hdn= tf.keras.layers.Conv2D(64, (3,3), activation='relu')(inp)
+    hdn = tf.keras.layers.Conv2D(32, (3,3), activation='relu')(hdn)
+    hdn = tf.keras.layers.Flatten()(hdn)
+    hdn = tf.keras.layers.Dense(256, activation='relu')(hdn)
+    hdn = tf.keras.layers.Dense(128, activation='relu')(hdn)
+    hdn = tf.keras.layers.Dense(32, activation='relu')(hdn)
+    hdn = tf.keras.layers.Dense(10, activation='softmax')(hdn)
+    model = tf.keras.models.Model(inputs=inp, outputs=hdn)
     def __init__(self):
         self.min = None
         self.max = None
