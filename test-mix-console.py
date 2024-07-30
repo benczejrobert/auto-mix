@@ -64,7 +64,7 @@ test_data_root = os.path.join('..', 'data', 'Test')  #[path], relative path to T
 k = 1 #len(get_class_list(db_path))  #[int], number of folds to be performed
 batch_size = 2  #[int], size of batch in examples (diff features)
 shuffle_buffer = 3 * batch_size  #[int], size of the buffer used to shuffle the data
-epochs = 530 #130  #[int], number of epochs to be performed during training
+epochs = 130 #530  #[int], number of epochs to be performed during training
 path_model = os.path.join('..', 'Model', 'model_1.h5')
 
 # Arguments for predict (test)
