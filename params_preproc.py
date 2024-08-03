@@ -18,7 +18,7 @@ small_no = 1e-320 # delay for unicity of timestamps
 sig_root_path = os.path.join("..","data","raw-audio")
 
 # todo here will be a subfolder structure for each drum channel
-preproc_signals_root_folder = "..\\data\\processed-audio-latest"
+preproc_signals_root_folder = os.path.join("..","data","processed-audio-latest")
 sample_rate = 22050
 # TODO make start index a list so u can choose it for each channel
 param_start_index = 0  # left at 65613 for commented generic params Moro
