@@ -1,3 +1,5 @@
+import os.path
+
 small_no = 1e-320 # delay for unicity of timestamps
 
 # TODO add logarithmic penalty for the frequency parameters, maybe for db gain too (depending on the range of errors)
@@ -13,7 +15,7 @@ small_no = 1e-320 # delay for unicity of timestamps
 # TODO when multiple channels will be added, sig_root_path will point to a folder with multiple signals
 # sig_path = "..\\data\\raw-audio\\resampled_white_noise.wav"
 # sig_path = "D:\\PCON\\Disertatie\\AutoMixMaster\\datasets\\diverse-test\\white-noise-reaper-generated.wav"
-sig_root_path = "..\\data\\raw-audio\\"
+sig_root_path = os.path.join("..","data","raw-audio")
 
 # todo here will be a subfolder structure for each drum channel
 preproc_signals_root_folder = "..\\data\\processed-audio-latest"
