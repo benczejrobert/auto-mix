@@ -334,6 +334,7 @@ def compute_scaler(data_path, with_mean=True, scaler_type='maxabs'):
             except Exception as e:  # 1st element is a scalar, scalars have no len()
                 print("Exception for file = ", os.path.join(path, file))
                 print(f"{debugger_details()} Exception: {e}")
+                input("press enter to continue")
             # if len(npy.shape) < 2:
             #     X.append(npy)
             # else:
