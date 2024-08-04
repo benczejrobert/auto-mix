@@ -323,27 +323,36 @@ def compute_scaler(data_path, with_mean=True, scaler_type='maxabs'):
             print(f" --- compute_scaler() reached path and file: {path, file} --- ") # TODO make a file that stores the values used to norm (e.g. max abs) AND also the list of remaining files to process
             # print(f"{debugger_details()} pathology: {pathology}")
             # files = sorted(os.listdir(os.path.join(path, pathology)))
-            def tryload(t_path, t_file):
+            def tryload(t_path, t_file, t_scaler):
                 try:
                     npy = np.load(os.path.join(t_path, t_file),
                                   allow_pickle=True)  # this contains the features and the labels. get only features
                     npy = npy[0]
+                    print("npy[0].shape = ", npy[0].shape)
                     if len(npy[0].shape) >= 2:  # if 1st element is not a vector or a scalar
                         if scaler_type == 'minmax':
-                            scaler = MultiDim_MinMaxScaler()
+                             t_scaler = MultiDim_MinMaxScaler()
                         else:
-                            scaler = MultiDim_MaxAbsScaler()  # if standard scale or maxabs [-1,1]
-                        return (scaler, npy)
+                            t_scaler = MultiDim_MaxAbsScaler()  # if standard scale or maxabs [-1,1]
+                    else:
+                        if scaler_type == 'minmax':
+                             t_scaler = MinMaxScaler() # TODO how was this working before?!
+                        else:
+                            t_scaler = MaxAbsScaler()  # if standard scale or maxabs [-1,1]
                 except Exception as e:  # 1st element is a scalar, scalars have no len()
                     print("Exception for file = ", os.path.join(t_path, t_file))
                     print(f"{debugger_details()} Exception: {e}")
                     input("Replace the file and press enter to continue")
-                    (scaler, npy) = tryload(t_path, t_file)
+                    (t_scaler, npy) = tryload(t_path, t_file, )
+                finally:
                     return (scaler, npy)
+                # return (t_scaler, npy)
             # try:
             #     npy = np.load(os.path.join(path, file), allow_pickle=True)  # this contains the features and the labels. get only features
             #     npy = npy[0]
             #     if len(npy[0].shape) >= 2:  # if 1st element is not a vector or a scalar
+            #         print("wtf ")
+            #         input("wtfff")
             #         if scaler_type == 'minmax':
             #             scaler = MultiDim_MinMaxScaler()
             #         else:
@@ -352,7 +361,7 @@ def compute_scaler(data_path, with_mean=True, scaler_type='maxabs'):
             #     print("Exception for file = ", os.path.join(path, file))
             #     print(f"{debugger_details()} Exception: {e}")
             #     input("press enter to continue")
-            scaler, npy = tryload(path, file)
+            scaler, npy = tryload(path, file, scaler)
 
             # if len(npy.shape) < 2:
             #     X.append(npy)
