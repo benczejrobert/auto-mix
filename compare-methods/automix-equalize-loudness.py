@@ -1,3 +1,5 @@
+import os.path
+
 from utils import *
 import numpy as np
 import pymixconsole as pymc
@@ -10,12 +12,12 @@ def to_amplitude(db,ref=1,power=False):
     return ref * 10**(db / (10 * (not power) + 10))
 
 #TODO lookup which paper it comes from - automix params with conv1d, batch norm, FiLM, PReLU
-root = r'..\AutoMixMaster\datasets\ENST-drums-audio\ENST-drums-public\drummer_1\audio'
-file_name = '036_phrase_disco_simple_slow_sticks.wav'
-mix_path = root+r'\dry_mix\\'+file_name
+root = os.path.join(*["..","AutoMixMaster","datasets","ENST-drums-audio","ENST-drums-public","drummer_1","audio"])
+file_name = "036_phrase_disco_simple_slow_sticks.wav"
+mix_path = os.path.join(root,"dry_mix",file_name)
 _, rate = sf.read(mix_path) #TODO maybe use this as ref? - nah really because it's processed otherwise than simply summing the audios.
-dir_list = os.listdir(root)
-for f in ['wet_mix','accompaniment','.DS_Store','dry_mix']:
+dir_list = os.listdir(root) # TODO reupload  np.load(os.path.join("../data/Train/Kick-In", "diff_features_and_params_Kick-In_eq_ed_510741.npy"),allow_pickle=True)
+for f in ["wet_mix","accompaniment",".DS_Store","dry_mix"]:
     dir_list.remove(f)
 audios = []
 rates = [] # wrong to equalize all the mix.
@@ -46,10 +48,10 @@ def diff(sig_to_proc,ref_partial_loudness_db,_meter,verbose=False, sig_ref_of_fu
     diff_loudness_ampl = to_amplitude(-diff_loudness_db)
     if verbose:
         if ref_partial_loudness_db != -np.inf:
-            print('\t---crt, ref, full ref', crt_partial_loudness_db, ref_partial_loudness_db,
+            print("\t---crt, ref, full ref", crt_partial_loudness_db, ref_partial_loudness_db,
                   meter.integrated_loudness(sig_ref_of_full_loudness)) # sig_ref (e gen sig ref full) mix_non_eq[i:i + l])
         if ref_partial_loudness_db != -np.inf:
-            print('\tref and corrected loudness', ref_partial_loudness_db, _meter.integrated_loudness(diff_loudness_ampl * sig_to_proc))
+            print("\tref and corrected loudness", ref_partial_loudness_db, _meter.integrated_loudness(diff_loudness_ampl * sig_to_proc))
             # unele parti de semnal partial pot fi cu 0. e normal pe ele sa ai -inf
     return diff_loudness_ampl * sig_to_proc
 
@@ -88,14 +90,14 @@ for i in range(0, audios.shape[1], delay):
     k = 0 ###
     for a in audios:
         k += 1
-        print('crt_index = ',k) ###
+        print("crt_index = ",k)
         crt_processed_sig = diff(a[i:i + l],crt_ref_loudness_db,meter,True,mix_non_eq[i:i + l])
         audio_sum = audio_sum + crt_processed_sig #TODO something seems wrong here
     #TODO then make a normalized copy and also a non normalized copy
     if i + l <= audios.shape[1]:
         mix_eq.extend(audio_sum)
     if crt_ref_loudness_db != -np.inf:
-        print('crt sum vs ref',meter.integrated_loudness(audio_sum),crt_ref_loudness_db)
+        print("crt sum vs ref",meter.integrated_loudness(audio_sum),crt_ref_loudness_db)
         #TODO mai fac un diff pe aici ca sa egalizez si mai inmultesc in amplitudine
 
         # TODO fa verificarile matematice daca media pe aamplitudine se traduce in medie pe logaritm
@@ -103,8 +105,8 @@ for i in range(0, audios.shape[1], delay):
     # if ref_loudness_db != -np.inf:
     #     break
 
-sf.write('test_mix_non_equal_loudness.wav',np.array(mix_non_eq),rate)
-sf.write('test_mix_equal_loudness.wav',np.array(mix_eq),rate)
+sf.write("test_mix_non_equal_loudness.wav",np.array(mix_non_eq),rate)
+sf.write("test_mix_equal_loudness.wav",np.array(mix_eq),rate)
 
 ## TODO google this:
 

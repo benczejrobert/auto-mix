@@ -1,11 +1,13 @@
+import os.path
+
 from utils import *
 class SignalProcessor:
     """
         This class is used to process signals with various filters and save the processed signals with metadata.
     """
 
-    def __init__(self, in_signal_path, dict_norm_values, processed_signals_root_folder="..\\processed-audio-latest",
-                 features_folder="..\\features-latest", resample_to=None):
+    def __init__(self, in_signal_path, dict_norm_values, processed_signals_root_folder=os.path.join("..,processed-audio-latest"),
+                 features_folder=os.path.join("..","features-latest"), resample_to=None):
 
         """
         This function creates a SignalProcessor class instance for a single signal.
@@ -30,8 +32,8 @@ class SignalProcessor:
         self.signal, self.rate = librosa.load(in_signal_path, sr=resample_to)
 
 
-    def reset_instance_params(self, in_signal_path, dict_norm_values, processed_signals_root_folder="..\\processed-audio-latest",
-                 features_folder="..\\features-latest", resample_to=None):
+    def reset_instance_params(self, in_signal_path, dict_norm_values, processed_signals_root_folder=os.path.join("..","processed-audio-latest"),
+                 features_folder=os.path.join("..","features-latest"), resample_to=None):
 
         """
         This function creates a SignalProcessor class instance for a single signal.
