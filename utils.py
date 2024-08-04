@@ -333,12 +333,13 @@ def compute_scaler(data_path, with_mean=True, scaler_type='maxabs'):
                             scaler = MultiDim_MinMaxScaler()
                         else:
                             scaler = MultiDim_MaxAbsScaler()  # if standard scale or maxabs [-1,1]
-                        return scaler, npy
+                        return (scaler, npy)
                 except Exception as e:  # 1st element is a scalar, scalars have no len()
                     print("Exception for file = ", os.path.join(t_path, t_file))
                     print(f"{debugger_details()} Exception: {e}")
                     input("Replace the file and press enter to continue")
-                    return tryload(t_path, t_file)
+                    (scaler, npy) = tryload(t_path, t_file)
+                    return (scaler, npy)
             # try:
             #     npy = np.load(os.path.join(path, file), allow_pickle=True)  # this contains the features and the labels. get only features
             #     npy = npy[0]
