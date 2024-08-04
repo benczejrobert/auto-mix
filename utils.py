@@ -1,3 +1,5 @@
+import os.path
+
 from imports import *
 from params_preproc import *
 
@@ -266,111 +268,143 @@ def train_model(model, train_dataset, val_dataset, batch_size, epochs, path_mode
 class MultiDim_MaxAbsScaler(): #if not in use modify name to end with _vertical
     #this scales everything vertically
     def __init__(self):
-        self.maxabs = None
+        self.max_abs_ = None
     def fit(self,x):  # extracts min/max from the data or whatever needed for scaling
         if not isinstance(x,type(np.array([1,2,3]))):
             x = np.array(x)
         y = np.concatenate(x,axis=0)
-        self.maxabs = np.max(np.abs(y),axis=0)
+        self.max_abs_ = np.max(np.abs(y),axis=0)
     def transform(self,x): # scales its input to whatever min/max was extracted via fit()
         if not isinstance(x,type(np.array([1,2,3]))):
             x = np.array(x)
-        return x/self.maxabs
+        return x/self.max_abs_
 
 class MultiDim_MaxAbsScaler_orig():  #if not in use modify name to end with _original
     def __init__(self):
-        self.maxabs = None
+        self.max_abs_ = None
     def fit(self,x):  # extracts min/max from the data or whatever needed for scaling
         if not isinstance(x,type(np.array([1,2,3]))):
             x = np.array(x)
-        self.maxabs = np.max(np.abs(x))
+        self.max_abs_ = np.max(np.abs(x))
     def transform(self,x): # scales its input to whatever min/max was extracted via fit()
         if not isinstance(x,type(np.array([1,2,3]))):
             x = np.array(x)
-        return x/self.maxabs
+        return x/self.max_abs_
 
-
-def compute_scaler(data_path, with_mean=True, scaler_type='maxabs'):
+def save_scaler_values(scaler, s_path, s_scaler_type, list_of_files):
     """
-    Computes the scaler on the entire database.
+    Saves the values of the scaler in a .npy file
+    :param scaler: the scaler object
+    :param s_path: path where the file will be saved
+    :param s_scaler_type: the type of the scaler
+    :param status: the status of the parameter computation (e.g. True for the fit data)
+    """
+    if not os.path.exists(s_path):
+        os.makedirs(s_path)
+    np.save(os.path.join(s_path,f"{s_scaler_type}_scaler_values.npy"), [scaler.__getattribute__(f"{s_scaler_type}"), list_of_files])  # todo also add the list of files left to process AND pop the current file from the list
+
+def load_scaler_values(l_path, s_scaler_type):
+    """
+    Loads the values of the scaler from a .npy file
+    """
+    if not os.path.exists(l_path):
+        # create path
+        os.makedirs(l_path)
+        return None
+    elif not os.path.exists(os.path.join(l_path, f"{s_scaler_type}_scaler_values.npy")):
+        return None
+    else:
+        return np.load(os.path.join(l_path, f"{s_scaler_type}_scaler_values.npy"), allow_pickle=True)
+
+def compute_scaler(data_path, with_mean=True, scaler_type='max_abs_'):
+    """
+    Computes the scaler on the entire database for a current channel.
 
     Arguments:
+        - data_path [string], relative path to the data folder, e.g. '..\\data\\Train\\Kick-In'
         - tfrecord - NOT USED - [boolean], if true, reads data from TFRecord files, else from .npy files
-        - scaler_type [string] can be 'standard', 'minmax', 'maxabs'
+        - scaler_type [string] can be 'standard', 'minmax', 'max_abs_'
     Output:
         - scaler [a fitted sklearn.preprocessing scaler]
         Can be Standard -> [mean - 3*sigma, mean + 3*sigma] , MinMax -> default [0,1]  or MaxAbs -> [-1,1]
 
     @BR20240620: partial_fit was used instead of fit because
     """
+    scaler_params_root = os.path.join("..","data","scaler-params")
     X = []
-    if scaler_type not in ['standard', 'minmax', 'maxabs']:
-        raise Exception(f"{debugger_details()} Please select scaler_type from: 'standard', 'minmax', 'maxabs' ")
+    if scaler_type not in ['standard', 'minmax', 'max_abs_']:
+        raise Exception(f"{debugger_details()} Please select scaler_type from: 'standard', 'minmax', 'max_abs_'. scaler_type is {scaler_type}")
     if scaler_type == 'standard':
         scaler = StandardScaler(
-            with_mean=with_mean)  # -> not just a maxabs +/-3, also modifies the distribution to Gauss
-    if scaler_type == 'minmax':
+            with_mean=with_mean)  # -> not just a max_abs_ +/-3, also modifies the distribution to Gauss
+    if scaler_type == 'minmax': # todo unimplemented/tested
         scaler = MinMaxScaler()  # -> does indeed [0,1]. BUT requires individual feature vectors of max. 1D shape
-    if scaler_type == 'maxabs':
+    if scaler_type == 'max_abs_':
         scaler = MaxAbsScaler()  # -> does indeed [-1,1]
 
-    paths = [data_path.replace("Test","Train"), data_path]
+    remaining_list_of_filepaths = None
+    if load_scaler_values(os.path.join(scaler_params_root,os.path.split(data_path)[-1]), scaler_type) is not None:
+        scaler_values = load_scaler_values(os.path.join(scaler_params_root,os.path.split(data_path)[-1]), scaler_type)
+        scaler.max_abs_ = scaler_values[0]
+        remaining_list_of_filepaths = scaler_values[1]
+        print(f" --- compute_scaler(): For channel {os.path.split(data_path)[-1]}, for scaler parameters in ,{f'{scaler_type}_scaler_values.npy'} there are {len(remaining_list_of_filepaths)} files left to parse--- ")
+        if len(remaining_list_of_filepaths) == 0:
+            return scaler  # TODO this will not work for multidim scalers and will need an update
+    else:
+        print(f" --- compute_scaler(): For channel {os.path.split(data_path)[-1]}, scaler values are not yet saved --- ")
+    test_train_paths = [data_path.replace("Test", "Train"), data_path]
     if "Train" in data_path:
-        paths = [data_path, data_path.replace("Train","Test")]
-    for path in paths:
-        list_of_files = sorted(os.listdir(path))
-        for file in list_of_files:
-            print(f" --- compute_scaler() reached path and file: {path, file} --- ") # TODO make a file that stores the values used to norm (e.g. max abs) AND also the list of remaining files to process
-            # print(f"{debugger_details()} pathology: {pathology}")
-            # files = sorted(os.listdir(os.path.join(path, pathology)))
-            def tryload(t_path, t_file, t_scaler):
-                try:
-                    npy = np.load(os.path.join(t_path, t_file),
-                                  allow_pickle=True)  # this contains the features and the labels. get only features
-                    npy = npy[0]
-                    print("npy[0].shape = ", npy[0].shape)
-                    if len(npy[0].shape) >= 2:  # if 1st element is not a vector or a scalar
-                        if scaler_type == 'minmax':
-                             t_scaler = MultiDim_MinMaxScaler()
-                        else:
-                            t_scaler = MultiDim_MaxAbsScaler()  # if standard scale or maxabs [-1,1]
+        test_train_paths = [data_path, data_path.replace("Train", "Test")]
+    list_of_filepaths = []
+
+    if remaining_list_of_filepaths is None:  # check if there is a list of remaining files to load from the previous run
+        for path in test_train_paths:  # generate files to load
+            crt_filepaths = [os.path.join(path, file) for file in sorted(os.listdir(path))]
+            list_of_filepaths.extend(crt_filepaths)
+            remaining_list_of_filepaths = list_of_filepaths # todo check how to treat this - should initially load ALL files for both test and train for scaler computation
+    else:
+        list_of_filepaths = remaining_list_of_filepaths # loaded remaining files from the previous run
+    for filepath in list_of_filepaths: # todo make list_of_paths a list of full paths
+        print(f" --- compute_scaler() reached filepath: {filepath} --- ")
+        # print(f"{debugger_details()} pathology: {pathology}")
+        # files = sorted(os.listdir(os.path.join(path, pathology)))
+        def tryload(t_filepath, t_scaler):
+            try:
+                npy = np.load(t_filepath,
+                              allow_pickle=True)  # this contains the features and the labels. get only features
+                npy = npy[0]
+                print("npy[0].shape = ", npy[0].shape)
+                if len(npy[0].shape) >= 2:  # if 1st element is not a vector or a scalar
+                    if scaler_type == 'minmax':
+                        t_scaler = MultiDim_MinMaxScaler()
                     else:
-                        if scaler_type == 'minmax':
-                             t_scaler = MinMaxScaler() # TODO how was this working before?!
-                        else:
-                            t_scaler = MaxAbsScaler()  # if standard scale or maxabs [-1,1]
-                except Exception as e:  # 1st element is a scalar, scalars have no len()
-                    print("Exception for file = ", os.path.join(t_path, t_file))
-                    print(f"{debugger_details()} Exception: {e}")
-                    input("Replace the file and press enter to continue")
-                    (t_scaler, npy) = tryload(t_path, t_file, )
-                finally:
-                    return (scaler, npy)
-                # return (t_scaler, npy)
-            # try:
-            #     npy = np.load(os.path.join(path, file), allow_pickle=True)  # this contains the features and the labels. get only features
-            #     npy = npy[0]
-            #     if len(npy[0].shape) >= 2:  # if 1st element is not a vector or a scalar
-            #         print("wtf ")
-            #         input("wtfff")
-            #         if scaler_type == 'minmax':
-            #             scaler = MultiDim_MinMaxScaler()
-            #         else:
-            #             scaler = MultiDim_MaxAbsScaler()  # if standard scale or maxabs [-1,1]
-            # except Exception as e:  # 1st element is a scalar, scalars have no len()
-            #     print("Exception for file = ", os.path.join(path, file))
-            #     print(f"{debugger_details()} Exception: {e}")
-            #     input("press enter to continue")
-            scaler, npy = tryload(path, file, scaler)
+                        t_scaler = MultiDim_MaxAbsScaler()  # if standard scale or max_abs_ [-1,1]
+                else:
+                    if scaler_type == 'minmax':
+                        t_scaler = MinMaxScaler() # TODO how was this working before?!
+                    else:
+                        t_scaler = MaxAbsScaler()  # if standard scale or max_abs_ [-1,1]
+            except Exception as e:  # 1st element is a scalar, scalars have no len()
+                print("Exception for file at path = ", t_filepath)
+                print(f"{debugger_details()} Exception: {e}")
+                input("Replace the file and press enter to continue")
+                (t_scaler, npy) = tryload(t_filepath, scaler)
+            finally:
+                return (t_scaler, npy)
+            # return (t_scaler, npy)
+        scaler, npy = tryload(filepath, scaler)
 
-            # if len(npy.shape) < 2:
-            #     X.append(npy)
-            # else:
-            #     X.extend(npy)
+        # if len(npy.shape) < 2:
+        #     X.append(npy)
+        # else:
+        #     X.extend(npy)
 
-            scaler.partial_fit([npy])
-    # scaler.fit(X) # partial_fit() for large datasets
+        scaler.partial_fit([npy])
+        remaining_list_of_filepaths.remove(filepath)
+        save_scaler_values(scaler, os.path.join(os.path.split(filepath.replace("Train","Test").replace("Test","scaler-params"))[0]), scaler_type, remaining_list_of_filepaths)
+# scaler.fit(X) # partial_fit() for large datasets
 
+    save_scaler_values(scaler, os.path.join(os.path.split(filepath.replace("Train","Test").replace("Test","scaler-params"))[0]), scaler_type, remaining_list_of_filepaths)
     return scaler
 
 

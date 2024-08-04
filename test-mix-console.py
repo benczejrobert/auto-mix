@@ -59,8 +59,9 @@ split_perc_train = 70
 
 # Arguments for k_fold_cross_validation (train)
 train = True
+scaler_values_path = os.path.join("..","data","scaler-values") #[path], relative path to scaler-values folder
 train_data_root = os.path.join('..', 'data', 'Train')  #[path], relative path to Train folder
-test_data_root = os.path.join('..', 'data', 'Test')  #[path], relative path to Train folder
+test_data_root = os.path.join('..', 'data', 'Test')  #[path], relative path to Test folder
 k = 1 #len(get_class_list(db_path))  #[int], number of folds to be performed
 batch_size = 2  #[int], size of batch in examples (diff features)
 shuffle_buffer = 3 * batch_size  #[int], size of the buffer used to shuffle the data

@@ -16,7 +16,7 @@ class ChannelFeatureScalers:
             if not len(list_scaler_types) == len(os.listdir(self.train_data_root)):
                 raise Exception("The length of list_scaler_types and trian_data_root should be equal")
         else:
-            self.list_scaler_types = ['maxabs'] * len(os.listdir(self.train_data_root))
+            self.list_scaler_types = ['max_abs_'] * len(os.listdir(self.train_data_root))
         if list_with_mean is not None:
             if not len(list_with_mean) == len(os.listdir(self.train_data_root)):
                 raise Exception("The length of list_with_mean and trian_data_root should be equal")
@@ -28,6 +28,7 @@ class ChannelFeatureScalers:
             if not len(files):
                 continue
             channel = os.path.split(current_filepath)[-1]
+            print(f"Computing scaler for channel {channel} and path {current_filepath}")
             self.scalers[channel] = compute_scaler(current_filepath, with_mean=self.list_with_mean[i],
                                                    scaler_type=self.list_scaler_types[i])
             i += 1
