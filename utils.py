@@ -428,7 +428,8 @@ def compute_scaler(data_path, with_mean=True, scaler_type='max_abs_'):
             list_of_filepaths.extend(crt_filepaths)
             remaining_list_of_filepaths = list_of_filepaths # todo check how to treat this - should initially load ALL files for both test and train for scaler computation
     if remaining_list_of_filepaths is not None and len(remaining_list_of_filepaths) > 0:
-        remaining_list_of_filepaths = remaining_list_of_filepaths.tolist()
+        if isinstance(remaining_list_of_filepaths, np.ndarray):
+            remaining_list_of_filepaths = remaining_list_of_filepaths.tolist()
         list_of_filepaths = remaining_list_of_filepaths # loaded remaining files from the previous run
     npy = tryload_features(list_of_filepaths[0], scaler_type)
     scaler = reevaluate_scaler_type(npy, scaler_type) # TODO maybe this triggers the bug with "ValueError: setting an array element with a sequence."
