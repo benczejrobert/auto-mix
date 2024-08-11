@@ -1,5 +1,7 @@
 import os.path
 
+import numpy as np
+
 from imports import *
 from params_preproc import *
 
@@ -291,7 +293,7 @@ class MultiDim_MaxAbsScaler_orig():  #if not in use modify name to end with _ori
             x = np.array(x)
         return x/self.max_abs_
 
-def save_scaler_values(scaler, s_path, s_scaler_type, list_of_files):
+def save_scaler_details(scaler, s_path, s_scaler_type, list_of_files):
     """
     Saves the values of the scaler in a .npy file
     :param scaler: the scaler object
@@ -331,10 +333,10 @@ def load_remaining_scaler_filepaths(l_path, s_scaler_type):
     elif not os.path.exists(os.path.join(l_path, f"{s_scaler_type}_remaining_filepaths.npy")):
         return None
     else:
-        return np.load(os.path.join(l_path, f"{s_scaler_type}_remaining_filepaths.npy"), allow_pickle=True)
+        return np.load(os.path.join(l_path, f"{s_scaler_type}_remaining_filepaths.npy"), allow_pickle=True)  # array of paths no-no WHY
 
-def load_scaler_details(l_path, s_scaler_type):
-    return load_scaler_values(l_path, s_scaler_type), load_remaining_scaler_filepaths(l_path, s_scaler_type)
+def load_scaler_details(ls_path, ls_scaler_type):
+    return load_scaler_values(ls_path, ls_scaler_type), load_remaining_scaler_filepaths(ls_path, ls_scaler_type)
 
 def get_unidim_scaler_type(scaler_type, with_mean=True):
     """
@@ -354,37 +356,40 @@ def get_unidim_scaler_type(scaler_type, with_mean=True):
         scaler = MaxAbsScaler()  # -> does indeed [-1,1]
     return scaler
 
-
-def tryload_features(t_filepath, t_scaler, t_scaler_type='max_abs_'):
+def reevaluate_scaler_type(npy,r_scaler_type):
+    if len(npy[0].shape) >= 2:  # if 1st element is not a vector or a scalar
+        if r_scaler_type == 'minmax':
+            r_scaler = MultiDim_MinMaxScaler()
+        else:
+            r_scaler = MultiDim_MaxAbsScaler()  # if standard scale or max_abs_ [-1,1]
+    else:  # TODO is this required? - will the scaler be undefined here at any point?
+        if r_scaler_type == 'minmax':
+            r_scaler = MinMaxScaler()  # TODO how was this working before?!
+        else:
+            r_scaler = MaxAbsScaler()  # if standard scale or max_abs_ [-1,1]
+            # TODO this reinstantiates the scaler with empty scaler
+    return r_scaler
+def tryload_features(t_filepath, t_scaler_type='max_abs_'):
     """
         This function tries to load the features from a file. If it fails, it will ask the user to replace the file.
     :param t_scaler_type:
     :param t_filepath:
-    :param t_scaler:
     :return:
     """
     try:
-        npy = np.load(t_filepath,
-                      allow_pickle=True)  # this contains the features and the labels. get only features
-        npy = npy[0]
-        print("npy[0].shape = ", npy[0].shape)
-        if len(npy[0].shape) >= 2:  # if 1st element is not a vector or a scalar
-            if t_scaler_type == 'minmax':
-                t_scaler = MultiDim_MinMaxScaler()
-            else:
-                t_scaler = MultiDim_MaxAbsScaler()  # if standard scale or max_abs_ [-1,1]
-        else:
-            if t_scaler_type == 'minmax':
-                t_scaler = MinMaxScaler()  # TODO how was this working before?!
-            else:
-                t_scaler = MaxAbsScaler()  # if standard scale or max_abs_ [-1,1]
+        tr_npy = np.load(t_filepath,
+                         allow_pickle=True)  # this contains the features and the labels. get only features
+        print("npy[0].shape = ", tr_npy[0].shape)
+        # tr_npy = tr_npy[0]
+        # if True: # TODO implement if the scalers have not been already loaded (i.e. 1st run) OR if the scaling param is a single numbern. otherwise this will only reset the value of the scaling parameter (e.g. max_abs_)
+        #     r_scaler = reevaluate_scaler_type(tr_npy, t_scaler_type)
     except Exception as e:  # 1st element is a scalar, scalars have no len()
         print("Exception for file at path = ", t_filepath)
         print(f"{debugger_details()} Exception: {e}")
         input("Replace the file and press enter to continue")
-        (t_scaler, npy) = tryload_features(t_filepath, t_scaler, t_scaler_type)
+        tr_npy = tryload_features(t_filepath)
     finally:
-        return (t_scaler, npy)
+        return tr_npy
     # return (t_scaler, npy)
 
 def compute_scaler(data_path, with_mean=True, scaler_type='max_abs_'):
@@ -405,44 +410,45 @@ def compute_scaler(data_path, with_mean=True, scaler_type='max_abs_'):
     X = []
     scaler = get_unidim_scaler_type(scaler_type, with_mean)
     remaining_list_of_filepaths = None
-    if load_scaler_values(os.path.join(scaler_params_root,os.path.split(data_path)[-1]), scaler_type) is not None:
-        scaler.max_abs_, remaining_list_of_filepaths = load_scaler_details(os.path.join(scaler_params_root,os.path.split(data_path)[-1]), scaler_type)
+    max_abs, remaining_list_of_filepaths = load_scaler_details(
+        os.path.join(scaler_params_root, os.path.split(data_path)[-1]), scaler_type)
+    if max_abs is not None and remaining_list_of_filepaths is not None:
+        scaler.max_abs_ = max_abs
         print(f" --- compute_scaler(): For channel {os.path.split(data_path)[-1]}, for scaler parameters in ,{f'{scaler_type}_scaler_values.npy'} there are {len(remaining_list_of_filepaths)} files left to parse--- ")
         if len(remaining_list_of_filepaths) == 0:
             return scaler  # TODO this will not work for multidim scalers and will need an update
-    else:
-        print(f" --- compute_scaler(): For channel {os.path.split(data_path)[-1]}, scaler values are not yet saved --- ")
-    test_train_paths = [data_path.replace("Test", "Train"), data_path]
-    if "Train" in data_path:
-        test_train_paths = [data_path, data_path.replace("Train", "Test")]
-    list_of_filepaths = []
-
-    if remaining_list_of_filepaths is None:  # check if there is a list of remaining files to load from the previous run
+    elif remaining_list_of_filepaths is None:
+        print(f" --- compute_scaler(): For channel {os.path.split(data_path)[-1]}, remaining filepaths are not yet saved --- ")
+        test_train_paths = [data_path.replace("Test", "Train"), data_path]
+        if "Train" in data_path:
+            test_train_paths = [data_path, data_path.replace("Train", "Test")]
+        list_of_filepaths = []
         for path in test_train_paths:  # generate files to load
             crt_filepaths = [os.path.join(path, file) for file in sorted(os.listdir(path))]
             list_of_filepaths.extend(crt_filepaths)
             remaining_list_of_filepaths = list_of_filepaths # todo check how to treat this - should initially load ALL files for both test and train for scaler computation
-    else:
+    if remaining_list_of_filepaths is not None and len(remaining_list_of_filepaths) > 0:
+        remaining_list_of_filepaths = remaining_list_of_filepaths.tolist()
         list_of_filepaths = remaining_list_of_filepaths # loaded remaining files from the previous run
+    npy = tryload_features(list_of_filepaths[0], scaler_type)
+    scaler = reevaluate_scaler_type(npy, scaler_type) # TODO maybe this triggers the bug with "ValueError: setting an array element with a sequence."
     for filepath in list_of_filepaths: # todo make list_of_paths a list of full paths
         print(f" --- compute_scaler() reached filepath: {filepath} --- ")
-        # print(f"{debugger_details()} pathology: {pathology}")
-        # files = sorted(os.listdir(os.path.join(path, pathology)))
-        scaler, npy = tryload_features(filepath, scaler, scaler_type)
+        npy = tryload_features(filepath, scaler_type)
 
         # if len(npy.shape) < 2:
         #     X.append(npy)
         # else:
         #     X.extend(npy)
 
-        scaler.partial_fit([npy])
+        scaler.partial_fit([npy[0]]) # error starts here
         remaining_list_of_filepaths.remove(filepath)
-        save_scaler_values(scaler, os.path.join(os.path.split(filepath.replace("Train","Test")
+        save_scaler_details(scaler, os.path.join(os.path.split(filepath.replace("Train","Test")
                                                               .replace("Test","scaler-params"))[0]),
                                     scaler_type, remaining_list_of_filepaths)
 # scaler.fit(X) # partial_fit() for large datasets
 
-    save_scaler_values(scaler, os.path.join(os.path.split(filepath.replace("Train","Test").replace("Test","scaler-params"))[0]), scaler_type, remaining_list_of_filepaths)
+    save_scaler_details(scaler, os.path.join(os.path.split(filepath.replace("Train","Test").replace("Test","scaler-params"))[0]), scaler_type, remaining_list_of_filepaths)
     return scaler
 
 
