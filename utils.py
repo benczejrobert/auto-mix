@@ -5,9 +5,7 @@ import numpy as np
 from imports import *
 from params_preproc import *
 
-# from logger import *
-
-
+from logger import *
 
 def hist_errors(y_pred, y_true, filter_params, model_name):
     """

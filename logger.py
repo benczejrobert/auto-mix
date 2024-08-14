@@ -1,5 +1,3 @@
-import os
-
 from imports import *
 import logging
 def increase_path_name(path):
@@ -47,6 +45,7 @@ crt_log_file = f'{logroot}/output-{today}.log' # TODO maybe change path at every
 crt_log_file = increase_path_name(crt_log_file) # in case the file already exists
 print("Logging started to path: ", crt_log_file)
 print("To see the logs in real time, please run python3 realtime-readfile.py -o", crt_log_file)
+time.sleep(10)
 file_handler = logging.FileHandler(filename=crt_log_file, mode='a')
 stdout_handler = logging.StreamHandler(stream=sys.stdout)
 handlers = [file_handler, stdout_handler]
