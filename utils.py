@@ -5,6 +5,10 @@ import numpy as np
 from imports import *
 from params_preproc import *
 
+# from logger import *
+
+
+
 def hist_errors(y_pred, y_true, filter_params, model_name):
     """
     Returns a histogram of errors for each parameter or for entire test set
@@ -310,15 +314,19 @@ def load_scaler_values(l_path, s_scaler_type):
     """
     Loads the values of the scaler from a .npy file
     """
-    if not os.path.exists(l_path):
-        # create path
-        os.makedirs(l_path)
-        return None
-    elif not os.path.exists(os.path.join(l_path, f"{s_scaler_type}_scaler_values.npy")):
-        return None
-    else:
-        return np.load(os.path.join(l_path, f"{s_scaler_type}_scaler_values.npy"), allow_pickle=True)
-
+    try:
+        if not os.path.exists(l_path):
+            # create path
+            os.makedirs(l_path)
+            return None
+        elif not os.path.exists(os.path.join(l_path, f"{s_scaler_type}_scaler_values.npy")):
+            return None
+        else:
+            return np.load(os.path.join(l_path, f"{s_scaler_type}_scaler_values.npy"), allow_pickle=True)
+    except Exception as e:
+        if "interpret as a pickle" in str(e):
+            print(f"load_scaler_values(): The file {os.path.split(l_path)[-1]} is most likely corrupt due to an interruption of the overwriting process")
+        raise e
 def load_remaining_scaler_filepaths(l_path, s_scaler_type):
     """
     Loads the remaining filepaths to compute scaler values from a .npy file
@@ -326,14 +334,19 @@ def load_remaining_scaler_filepaths(l_path, s_scaler_type):
     :param s_scaler_type:
     :return:
     """
-    if not os.path.exists(l_path):
-        # create path
-        os.makedirs(l_path)
-        return None
-    elif not os.path.exists(os.path.join(l_path, f"{s_scaler_type}_remaining_filepaths.npy")):
-        return None
-    else:
-        return np.load(os.path.join(l_path, f"{s_scaler_type}_remaining_filepaths.npy"), allow_pickle=True)  # array of paths no-no WHY
+    try:
+        if not os.path.exists(l_path):
+            # create path
+            os.makedirs(l_path)
+            return None
+        elif not os.path.exists(os.path.join(l_path, f"{s_scaler_type}_remaining_filepaths.npy")):
+            return None
+        else:
+            return np.load(os.path.join(l_path, f"{s_scaler_type}_remaining_filepaths.npy"), allow_pickle=True)  # array of paths no-no WHY
+    except Exception as e:
+        if "interpret as a pickle" in str(e):
+            print(f"load_remaining_scaler_filepaths(): The file {os.path.split(l_path)[-1]} is most likely corrupt due to an interruption of the overwriting process")
+        raise e
 
 def load_scaler_details(ls_path, ls_scaler_type):
     return load_scaler_values(ls_path, ls_scaler_type), load_remaining_scaler_filepaths(ls_path, ls_scaler_type)
@@ -436,11 +449,6 @@ def compute_scaler(data_path, with_mean=True, scaler_type='max_abs_'):
     for filepath in list_of_filepaths: # todo make list_of_paths a list of full paths
         print(f" --- compute_scaler() reached filepath: {filepath}. remaining files: {len(remaining_list_of_filepaths)} --- ")
         npy = tryload_features(filepath, scaler_type)
-
-        # if len(npy.shape) < 2:
-        #     X.append(npy)
-        # else:
-        #     X.extend(npy)
 
         scaler.partial_fit([npy[0]]) # error starts here
         remaining_list_of_filepaths.remove(filepath)
