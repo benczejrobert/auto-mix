@@ -55,10 +55,15 @@ logging.basicConfig(
     handlers=handlers
 )
 
+# TODO make logger catch stack traces
+
 stdout_logger = logging.getLogger('STDOUT')
 sl = StreamToLogger(stdout_logger, logging.INFO)
 sys.stdout = sl
 
-stderr_logger = logging.getLogger('STDERR')
+stderr_logger = logging.getLogger('STDERR')#.info("This will print the stack",stack_info=True)
 sl = StreamToLogger(stderr_logger, logging.ERROR)
 sys.stderr = sl
+
+# TODO on linux it's not working - TRY: tail -f path/to/logfile
+# todo remove some files from the feature folders to check if other scalers have been correctly saved
