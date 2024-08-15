@@ -447,14 +447,24 @@ def compute_scaler(data_path, with_mean=True, scaler_type='max_abs_'):
     csp_result = check_load_scaler_params(remaining_list_of_filepaths, max_abs, scaler, scaler_type, data_path)
     if csp_result is not None:
         remaining_list_of_filepaths, scaler, max_abs = csp_result
+    # print(debugger_details(),"csp_result", csp_result)
+    # print(debugger_details(),"remaining_list_of_filepaths is not None and len(remaining_list_of_filepaths) > 0",
+    #       remaining_list_of_filepaths is not None and len(remaining_list_of_filepaths) > 0)
+    # print(debugger_details(),"isinstance(remaining_list_of_filepaths, np.ndarray)",
+    #       isinstance(remaining_list_of_filepaths, np.ndarray))
     # \/---TODO maybe add to check_load_scaler_params() from here---\/
     if remaining_list_of_filepaths is not None and len(remaining_list_of_filepaths) > 0:
         if isinstance(remaining_list_of_filepaths, np.ndarray):
             remaining_list_of_filepaths = remaining_list_of_filepaths.tolist()
+        # print(f" --- compute_scaler() moving remaining filepaths to list of filepaths")
+        # print(f" --- compute_scaler() moving remaining filepaths to list of filepaths")
         list_of_filepaths = remaining_list_of_filepaths # loaded remaining files from the previous run
 
-    npy = tryload_features(list_of_filepaths[0], scaler_type)
-    scaler = reevaluate_scaler_type(npy, scaler_type) # TODO maybe this triggers the bug with "ValueError: setting an array element with a sequence."
+    try:
+        npy = tryload_features(list_of_filepaths[0], scaler_type)
+        scaler = reevaluate_scaler_type(npy, scaler_type) # TODO maybe this triggers the bug with "ValueError: setting an array element with a sequence."
+    except:
+        return scaler
     # /\---TODO maybe add to check_load_scaler_params() until here---/\
 
     # \/---TODO make this multithreaded from here---\/
