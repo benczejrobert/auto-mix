@@ -4,7 +4,7 @@
 #SBATCH --job-name=brTest
 #SBATCH --gres=gpu:1
 
-current_time=$(date+"%Y:%m:%d-%H:%M")
+current_time=$(date +"%Y:%m:%d-%H:%M")
 #SBATCH --output=../runLogs/slurm-%j-${current_time}.out
 #SBATCH --error=../runLogs/slurm-%j-${current_time}.out
 
