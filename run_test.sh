@@ -3,10 +3,11 @@
 #SBATCH --nodes=1
 #SBATCH --job-name=benczeroAutoMix
 #SBATCH --gres=gpu:1
-#SBATCH --output=slurm-%j.out
-#SBATCH --error=slurm-%j.err
 
-source ../../venv/bin/activate
+current_time=$(date+%Y:%m:%d-%H:%M)
+#SBATCH --output=slurm-%j-%x-%y_%${current_time}.out
+#SBATCH --output=../runLogs/slurm-%j.out
+#SBATCH --error=../runLogs/slurm-%j.out
 
 source ../../venv/bin/activate
 
