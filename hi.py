@@ -3,7 +3,6 @@ i=0
 while 1:
     i+=1
     print("hi im a test", i)
-    sleep(0.5)
     if i == 1000:
         raise Exception("Test error")
 
