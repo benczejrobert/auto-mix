@@ -325,16 +325,18 @@ def load_scaler_values(l_path, s_scaler_type):
         else:
             return np.load(os.path.join(l_path, f"{s_scaler_type}_scaler_values.npy"), allow_pickle=True)
     except Exception as e:
-        if "interpret as a pickle" in str(e):
-            print(f"load_scaler_values(): The file {os.path.split(l_path)[-1]} is most likely corrupt due to an interruption of the overwriting process")
-        raise e
+        return np.load(os.path.join(l_path, f"bkp_{s_scaler_type}_scaler_values.npy"), allow_pickle=True)
+        # if "interpret as a pickle" in str(e):
+        #     print(f"load_scaler_values(): The file {os.path.split(l_path)[-1]} is most likely corrupt due to an interruption of the overwriting process")
+        # raise e
+
 def load_remaining_scaler_filepaths(l_path, s_scaler_type):
     """
-    Loads the remaining filepaths to compute scaler values from a .npy file
-    :param l_path:
-    :param s_scaler_type:
-    :return:
-    """
+        Loads the remaining filepaths to compute scaler values from a .npy file
+        :param l_path:
+        :param s_scaler_type:
+        :return:
+        """
     try:
         if not os.path.exists(l_path):
             # create path
@@ -345,10 +347,13 @@ def load_remaining_scaler_filepaths(l_path, s_scaler_type):
         else:
             print(f"{debugger_details()}: return" , f"{s_scaler_type}_remaining_filepaths.npy")
             return np.load(os.path.join(l_path, f"{s_scaler_type}_remaining_filepaths.npy"), allow_pickle=True)  # array of paths no-no WHY
+
     except Exception as e:
-        if "interpret as a pickle" in str(e):
-            print(f"load_remaining_scaler_filepaths(): The file {os.path.split(l_path)[-1]} is most likely corrupt due to an interruption of the overwriting process")
-        raise e
+        return np.load(os.path.join(l_path, f"bkp_{s_scaler_type}_remaining_filepaths.npy"),
+                allow_pickle=True)  # array of paths no-no WHY
+        # if "interpret as a pickle" in str(e):
+        #     print(f"load_remaining_scaler_filepaths(): The file {os.path.split(l_path)[-1]} is most likely corrupt due to an interruption of the overwriting process")
+        # raise e
 
 def load_scaler_details(ls_path, ls_scaler_type):
     return load_scaler_values(ls_path, ls_scaler_type), load_remaining_scaler_filepaths(ls_path, ls_scaler_type)
