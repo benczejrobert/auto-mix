@@ -292,7 +292,7 @@ class MultiDim_MaxAbsScaler_orig():  #if not in use modify name to end with _ori
             x = np.array(x)
         return x/self.max_abs_
 
-def save_scaler_details(scaler, s_path, s_scaler_type, list_of_files):
+def save_scaler_details(scaler, s_path, s_scaler_type, list_of_files,backup = False):
     """
     Saves the values of the scaler in a .npy file
     :param scaler: the scaler object
@@ -302,8 +302,14 @@ def save_scaler_details(scaler, s_path, s_scaler_type, list_of_files):
     """
     if not os.path.exists(s_path):
         os.makedirs(s_path)
+
     np.save(os.path.join(s_path,f"{s_scaler_type}_scaler_values.npy"), scaler.__getattribute__(f"{s_scaler_type}"))  # todo also add the list of files left to process AND pop the current file from the list
     np.save(os.path.join(s_path,f"{s_scaler_type}_remaining_filepaths.npy"), list_of_files)  # todo also add the list of files left to process AND pop the current file from the list
+    if backup:
+        print("--- save_scaler_details() creating backup files ---")
+        np.save(os.path.join(s_path,f"bkp_{s_scaler_type}_scaler_values.npy"), scaler.__getattribute__(f"{s_scaler_type}"))  # todo also add the list of files left to process AND pop the current file from the list
+        np.save(os.path.join(s_path,f"bkp_{s_scaler_type}_remaining_filepaths.npy"), list_of_files)  # todo also add the list of files left to process AND pop the current file from the list
+
 
 def load_scaler_values(l_path, s_scaler_type):
     """
@@ -460,7 +466,7 @@ def compute_scaler(data_path, with_mean=True, scaler_type='max_abs_'):
         # print(f" --- compute_scaler() moving remaining filepaths to list of filepaths")
         list_of_filepaths = remaining_list_of_filepaths # loaded remaining files from the previous run
 
-    try:
+    try: # TODO checkif scaler is good to return
         npy = tryload_features(list_of_filepaths[0], scaler_type)
         scaler = reevaluate_scaler_type(npy, scaler_type) # TODO maybe this triggers the bug with "ValueError: setting an array element with a sequence."
     except:
@@ -477,7 +483,7 @@ def compute_scaler(data_path, with_mean=True, scaler_type='max_abs_'):
         # /\---TODO make this multithreaded until here---/\
         save_scaler_details(scaler, os.path.join(os.path.split(filepath.replace("Train","Test")
                                                               .replace("Test","scaler-params"))[0]),
-                                    scaler_type, remaining_list_of_filepaths)
+                                    scaler_type, remaining_list_of_filepaths, len(remaining_list_of_filepaths) % 5 == 0) # create a backup at evdery 5 steps
 # scaler.fit(X) # partial_fit() for large datasets
 
     save_scaler_details(scaler, os.path.join(os.path.split(filepath.replace("Train","Test").replace("Test","scaler-params"))[0]), scaler_type, remaining_list_of_filepaths)
