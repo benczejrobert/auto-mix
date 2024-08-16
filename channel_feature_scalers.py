@@ -23,7 +23,7 @@ class ChannelFeatureScalers:
         else:
             self.list_with_mean = [True] * len(os.listdir(self.train_data_root))
 
-        for current_filepath, dirs, files in os.walk(self.train_data_root):
+        for current_filepath, dirs, files in sorted(os.walk(self.train_data_root)):
             i = 0
             if not len(files):
                 continue
