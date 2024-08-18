@@ -110,18 +110,15 @@ def get_unidim_scaler_type(scaler_type, with_mean=True):
         scaler = MaxAbsScaler()  # -> does indeed [-1,1]
     return scaler
 
-def reevaluate_scaler_type(npy,r_scaler_type):
+def evaluate_scaler_type(r_filepath,r_scaler_type, r_with_mean=True):
+    npy = tryload_features(r_filepath, r_scaler_type)
     if len(npy[0].shape) >= 2:  # if 1st element is not a vector or a scalar
         if r_scaler_type == 'minmax':
             r_scaler = MultiDim_MinMaxScaler()
         else:
             r_scaler = MultiDim_MaxAbsScaler()  # if standard scale or max_abs_ [-1,1]
     else:  # TODO is this required? - will the scaler be undefined here at any point?
-        if r_scaler_type == 'minmax':
-            r_scaler = MinMaxScaler()  # TODO how was this working before?!
-        else:
-            r_scaler = MaxAbsScaler()  # if standard scale or max_abs_ [-1,1]
-            # TODO this reinstantiates the scaler with empty scaler
+        r_scaler = get_unidim_scaler_type(r_scaler_type, r_with_mean)
     return r_scaler
 def tryload_features(t_filepath, t_scaler_type='max_abs_'):
     """
@@ -148,25 +145,31 @@ def tryload_features(t_filepath, t_scaler_type='max_abs_'):
 
 def check_load_scaler_params(csp_remaining_list_of_filepaths,
                         csp_max_abs, csp_scaler, csp_scaler_type, csp_data_path):
+    csp_list_of_filepaths = []
     if csp_max_abs is not None and csp_remaining_list_of_filepaths is not None:
         csp_scaler.csp_max_abs_ = csp_max_abs
         print(
             f" --- compute_csp_scaler(): For channel {os.path.split(csp_data_path)[-1]}, for scaler parameters in ,{f'{csp_scaler_type}_scaler_values.npy'} there are {len(csp_remaining_list_of_filepaths)} files left to parse--- ")
         if len(csp_remaining_list_of_filepaths) == 0:
-            return None  # TODO this will not work for multidim csp_scalers and will need an update
+            return csp_remaining_list_of_filepaths, csp_list_of_filepaths, csp_scaler, csp_max_abs  # TODO this will not work for multidim csp_scalers and will need an update
     elif csp_remaining_list_of_filepaths is None:
         print(
             f" --- compute_csp_scaler(): For channel {os.path.split(csp_data_path)[-1]}, remaining filepaths are not yet saved --- ")
         test_train_paths = [csp_data_path.replace("Test", "Train"), csp_data_path]
         if "Train" in csp_data_path:
             test_train_paths = [csp_data_path, csp_data_path.replace("Train", "Test")]
-        list_of_filepaths = []
         for path in test_train_paths:  # generate files to load
             crt_filepaths = [os.path.join(path, file) for file in sorted(os.listdir(path))]
-            list_of_filepaths.extend(crt_filepaths)
-            csp_remaining_list_of_filepaths = list_of_filepaths  # todo check how to treat this - should initially load ALL files for both test and train for csp_scaler computation
-    return csp_remaining_list_of_filepaths, csp_scaler, csp_max_abs
-
+            csp_list_of_filepaths.extend(crt_filepaths)
+            csp_remaining_list_of_filepaths = csp_list_of_filepaths  # todo check how to treat this - should initially load ALL files for both test and train for csp_scaler computation
+    csp_remaining_list_of_filepaths, csp_list_of_filepaths = reevaluate_filepath_lists(csp_remaining_list_of_filepaths, csp_list_of_filepaths)
+    return csp_remaining_list_of_filepaths, csp_list_of_filepaths, csp_scaler, csp_max_abs
+def reevaluate_filepath_lists(rev_remaining_list_of_filepaths, rev_list_of_filepaths):
+    if rev_remaining_list_of_filepaths is not None and len(rev_remaining_list_of_filepaths) > 0:
+        if isinstance(rev_remaining_list_of_filepaths, np.ndarray):
+            rev_remaining_list_of_filepaths = rev_remaining_list_of_filepaths.tolist()
+        rev_list_of_filepaths = rev_remaining_list_of_filepaths # loaded remaining files from the previous run
+    return rev_remaining_list_of_filepaths, rev_list_of_filepaths
 def compute_scaler(data_path, with_mean=True, scaler_type='max_abs_'):
     """
     Computes the scaler on the entire database for a current channel.
@@ -182,48 +185,47 @@ def compute_scaler(data_path, with_mean=True, scaler_type='max_abs_'):
     @BR20240620: partial_fit was used instead of fit because
     """
     scaler_params_root = os.path.join("..","data","scaler-params")
-    X = []
-    scaler = get_unidim_scaler_type(scaler_type, with_mean)
-    remaining_list_of_filepaths = None
+    scaler = evaluate_scaler_type(os.path.join(data_path, os.listdir(data_path)[0]), scaler_type,
+                                  with_mean)  # TODO maybe this triggers the bug with "ValueError: setting an array element with a sequence."
+    # reevaluate scaler may reset scaler parameters and yield inconsistent results (i.e. inconsistent max abs) - solved. renamed to evaluate_scaler_type
+
     max_abs, remaining_list_of_filepaths = load_scaler_details(
         os.path.join(scaler_params_root, os.path.split(data_path)[-1]), scaler_type)
 
 
     csp_result = check_load_scaler_params(remaining_list_of_filepaths, max_abs, scaler, scaler_type, data_path)
     if csp_result is not None:
-        remaining_list_of_filepaths, scaler, max_abs = csp_result
-    # print(debugger_details(),"csp_result", csp_result)
-    # print(debugger_details(),"remaining_list_of_filepaths is not None and len(remaining_list_of_filepaths) > 0",
-    #       remaining_list_of_filepaths is not None and len(remaining_list_of_filepaths) > 0)
-    # print(debugger_details(),"isinstance(remaining_list_of_filepaths, np.ndarray)",
-    #       isinstance(remaining_list_of_filepaths, np.ndarray))
+        remaining_list_of_filepaths, list_of_filepaths, scaler, max_abs = csp_result
     # \/---TODO maybe add to check_load_scaler_params() from here---\/
-    if remaining_list_of_filepaths is not None and len(remaining_list_of_filepaths) > 0:
-        if isinstance(remaining_list_of_filepaths, np.ndarray):
-            remaining_list_of_filepaths = remaining_list_of_filepaths.tolist()
-        # print(f" --- compute_scaler() moving remaining filepaths to list of filepaths")
-        # print(f" --- compute_scaler() moving remaining filepaths to list of filepaths")
-        list_of_filepaths = remaining_list_of_filepaths # loaded remaining files from the previous run
+    # if remaining_list_of_filepaths is not None and len(remaining_list_of_filepaths) > 0:
+    #     if isinstance(remaining_list_of_filepaths, np.ndarray):
+    #         remaining_list_of_filepaths = remaining_list_of_filepaths.tolist()
+    #     # print(f" --- compute_scaler() moving remaining filepaths to list of filepaths")
+    #     # print(f" --- compute_scaler() moving remaining filepaths to list of filepaths")
+    #     list_of_filepaths = remaining_list_of_filepaths # loaded remaining files from the previous run
 
-    try: # TODO checkif scaler is good to return
-        npy = tryload_features(list_of_filepaths[0], scaler_type)
-        scaler = reevaluate_scaler_type(npy, scaler_type) # TODO maybe this triggers the bug with "ValueError: setting an array element with a sequence."
-    except:
-        return scaler
+    # try: # TODO checkif scaler is good to return. in theory, no list of files = return scaler. moved to new func evaluate_scaler_type()
+    #     npy = tryload_features(list_of_filepaths[0], scaler_type)
+    # except:
+    #     return scaler
+    # scaler = reevaluate_scaler_type(npy, scaler_type) # TODO maybe this triggers the bug with "ValueError: setting an array element with a sequence."
     # /\---TODO maybe add to check_load_scaler_params() until here---/\
 
     # \/---TODO make this multithreaded from here---\/
+    list_of_filepaths = list_of_filepaths[0:10]  # todo remove the [0:10] slice
     for filepath in list_of_filepaths:
         print(f" --- compute_scaler() reached filepath: {filepath}. remaining files: {len(remaining_list_of_filepaths)} --- ")
-        npy = tryload_features(filepath, scaler_type)
+        npy = tryload_features(filepath, scaler_type) # can be parallelized
 
-        scaler.partial_fit([npy[0]]) # error starts here
-        remaining_list_of_filepaths.remove(filepath)
+        scaler.partial_fit([npy[0]]) # can be parallelized? - yes, get a max_abs_ then do a partial fit on the resulting list of max_abs_ values. make scaler shared between threads
+        remaining_list_of_filepaths.remove(filepath) # requires a lock and make variable shared between threads
         # /\---TODO make this multithreaded until here---/\
-        save_scaler_details(scaler, os.path.join(os.path.split(filepath.replace("Train","Test")
-                                                              .replace("Test","scaler-params"))[0]),
-                                    scaler_type, remaining_list_of_filepaths, len(remaining_list_of_filepaths) % 5 == 0) # create a backup at evdery 5 steps
-# scaler.fit(X) # partial_fit() for large datasets
+        # TODO maybe add a status flag if partial fit has changed the scaler parameters
+        save_scaler_details(scaler,
+                            os.path.join(os.path.split(filepath.replace("Train","Test")
+                                                       .replace("Test","scaler-params"))[0]), # create a backup at evdery 5 steps.
+                            scaler_type, remaining_list_of_filepaths,
+                            backup=(remaining_list_of_filepaths) % 5 == 0) # requires a lock
 
     save_scaler_details(scaler, os.path.join(os.path.split(filepath.replace("Train","Test").replace("Test","scaler-params"))[0]), scaler_type, remaining_list_of_filepaths)
     return scaler

@@ -9,4 +9,4 @@ output_file="../runLogs/slurm-${SLURM_JOB_ID}-${SLURM_JOB_NAME}-${current_time}.
 
 source ../../venv/bin/activate
 
-python3 test-mix-console.py > "$output_file" 2>&1
+python3 test-mix-console.py
