@@ -210,7 +210,7 @@ def compute_scaler(data_path, with_mean=True, scaler_type='max_abs_'):
                             os.path.join(os.path.split(filepath.replace("Train","Test")
                                                        .replace("Test","scaler-params"))[0]), # create a backup at evdery 5 steps.
                             scaler_type, remaining_list_of_filepaths,
-                            backup=(remaining_list_of_filepaths) % 5 == 0) # requires a lock
+                            backup=len(remaining_list_of_filepaths) % 5 == 0) # requires a lock
 
     save_scaler_details(scaler, os.path.join(os.path.split(filepath.replace("Train","Test").replace("Test","scaler-params"))[0]), scaler_type, remaining_list_of_filepaths)
     return scaler
