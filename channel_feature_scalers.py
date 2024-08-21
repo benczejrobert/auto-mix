@@ -193,26 +193,11 @@ def compute_scaler(data_path, with_mean=True, scaler_type='max_abs_'):
         os.path.join(scaler_params_root, os.path.split(data_path)[-1]), scaler_type)
 
 
-    csp_result = check_load_scaler_params(remaining_list_of_filepaths, max_abs, scaler, scaler_type, data_path)
-    if csp_result is not None:
-        remaining_list_of_filepaths, list_of_filepaths, scaler, max_abs = csp_result
-    # \/---TODO maybe add to check_load_scaler_params() from here---\/
-    # if remaining_list_of_filepaths is not None and len(remaining_list_of_filepaths) > 0:
-    #     if isinstance(remaining_list_of_filepaths, np.ndarray):
-    #         remaining_list_of_filepaths = remaining_list_of_filepaths.tolist()
-    #     # print(f" --- compute_scaler() moving remaining filepaths to list of filepaths")
-    #     # print(f" --- compute_scaler() moving remaining filepaths to list of filepaths")
-    #     list_of_filepaths = remaining_list_of_filepaths # loaded remaining files from the previous run
 
-    # try: # TODO checkif scaler is good to return. in theory, no list of files = return scaler. moved to new func evaluate_scaler_type()
-    #     npy = tryload_features(list_of_filepaths[0], scaler_type)
-    # except:
-    #     return scaler
-    # scaler = reevaluate_scaler_type(npy, scaler_type) # TODO maybe this triggers the bug with "ValueError: setting an array element with a sequence."
-    # /\---TODO maybe add to check_load_scaler_params() until here---/\
+    remaining_list_of_filepaths, list_of_filepaths, scaler, max_abs = (
+        check_load_scaler_params(remaining_list_of_filepaths, max_abs, scaler, scaler_type, data_path))
 
-    # \/---TODO make this multithreaded from here---\/
-    list_of_filepaths = list_of_filepaths[0:10]  # todo remove the [0:10] slice
+    list_of_filepaths = list_of_filepaths
     for filepath in list_of_filepaths:
         print(f" --- compute_scaler() reached filepath: {filepath}. remaining files: {len(remaining_list_of_filepaths)} --- ")
         npy = tryload_features(filepath, scaler_type) # can be parallelized
