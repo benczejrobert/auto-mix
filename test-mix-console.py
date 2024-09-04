@@ -58,14 +58,14 @@ split = False
 split_perc_train = 70
 
 # Arguments for k_fold_cross_validation (train)
-train = True
+train = False
 scaler_values_path = os.path.join("..","data","scaler-values") #[path], relative path to scaler-values folder
 train_data_root = os.path.join('..', 'data', 'Train')  #[path], relative path to Train folder
 test_data_root = os.path.join('..', 'data', 'Test')  #[path], relative path to Test folder
 k = 1 #len(get_class_list(db_path))  #[int], number of folds to be performed
 batch_size = 2  #[int], size of batch in examples (diff features)
 shuffle_buffer = 3 * batch_size  #[int], size of the buffer used to shuffle the data
-epochs = 130 #530  #[int], number of epochs to be performed during training
+epochs = 70 #130 #530  #[int], number of epochs to be performed during training
 path_model = os.path.join('..', 'Model', 'model_1.h5')
 
 # Arguments for predict (test)
@@ -92,7 +92,7 @@ if proc_end_to_end:
 if create_training_features:
     feats_extractor = FeatureExtractor(feature_list, feature_dict, variance_type, raw_features, keep_feature_dims)
     aas.create_features_diff_for_training(inst_feature_extractor=feats_extractor,
-                                          bool_pre_diff=param_pre_diff, bool_process_entire_signal=True)
+                                          bool_pre_diff=param_pre_diff, bool_process_entire_signal=process_entire_signal)
 
 # aas.process_signal_all_variants(signal_in, {test_fname: dict_filenames_and_process_variants[test_fname]})
 # training_data = aas.load_labels_metadata_for_training(preproc_signals_root_folder)

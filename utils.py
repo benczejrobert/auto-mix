@@ -1,10 +1,20 @@
-import os.path
+# import os.path
 from imports import *
 from params_preproc import *
 
 # from logger import *
 
-def hist_errors(y_pred, y_true, filter_params, model_name):
+def get_iterable_splits(in_iterable, no_splits):
+    list_dict_splits = []
+    len_subdict = len(in_iterable) // no_splits
+    for i in range(no_splits):
+        if i < no_splits - 1:
+            list_dict_splits.append(slice(i*len_subdict,(i+1)*len_subdict))
+        else:
+            list_dict_splits.append(slice(i*len_subdict,None))
+    return list_dict_splits
+
+def list_errors(y_pred, y_true, filter_params, model_name, showhist = True):
     """
     Returns a histogram of errors for each parameter or for entire test set
     """
@@ -19,7 +29,17 @@ def hist_errors(y_pred, y_true, filter_params, model_name):
             param_names.append(f"{filter}_{param}")
     # get unique values per columns
     # unique_values = [np.unique(y_diff[:,i]) for i in range(y_diff.shape[-1])]
-    create_histograms_2d_array(y_diff, param_names, model_name)
+    print("----- Results for model name =",model_name)
+    print("\tMSE for parameters is: ",(np.square(np.array(y_pred) - np.array(y_true))).mean(axis=0).tolist())
+    print("\tMAE for parameters is: ",(np.abs(np.array(y_pred) - np.array(y_true))).mean(axis=0).tolist())
+    print("\t1)Mean Relative absolute error for parameters is: ",(((np.array(y_pred) - np.array(y_true) + 0.00001)/(y_true+0.00001)).mean(axis=0)).tolist())
+    print("\t2)Mean Relative absolute error for parameters is: ",(((np.array(y_pred) - np.array(y_true) + 0.00001)/(y_true+0.00001).mean(axis=0)).mean(axis=0)).tolist())
+    print("\t3)Mean Relative absolute error for parameters is: ",(((np.array(y_pred) - np.array(y_true)).mean(axis=0)/(y_true+0.00001).mean(axis=0))).tolist())
+    print("\t4)Mean Relative absolute error for parameters is: ",(((np.array(y_pred) - np.array(y_true) + 0.00001)/(y_true+0.00001)).mean(axis=0)).tolist())
+
+    if showhist:
+        create_histograms_2d_array(y_diff, param_names, model_name)
+
     # TODO also add something that specifies the sample size or how many rows were in the test set.
 
 #deprecated
@@ -67,6 +87,7 @@ def create_histograms_2d_array_v0(array,param_names):
         plt.show()
 
 def create_histograms_2d_array(array, param_names, model_name, paper = False):
+    # TODO make this function show errors in larger bins rather than unique errors
     num_cols = array.shape[1]
     rows_cols_number = int(np.ceil(np.sqrt(num_cols)))
     fig = make_subplots(rows=rows_cols_number,
@@ -142,13 +163,21 @@ def create_histograms_2d_array(array, param_names, model_name, paper = False):
     )
     fig.show(renderer='browser')
 
+def denorm_param_01(x,lower_bound,upper_bound):
+    return x * (upper_bound - lower_bound) + lower_bound
+
+def log_denorm_param_01(x,lower_bound,upper_bound):
+    return 10 ** (x * (np.log10(upper_bound) - np.log10(lower_bound)) + np.log10(lower_bound))
+
 
 def denormalize_params(denorm_me, dn_dict_params_order=dict_params_order,
                        dict_norm_values=dict_normalization_values,
                        norm_type='0,1'):
+    # raise Exception("repair me to accept denormalization of logarithmic params as well - only frequency ones")
+    # freq params denorm like 10 ** (x * (np.log10(upper_bound) - np.log10(lower_bound)) + np.log10(lower_bound))
+    # formula not good atm: denorm_me = base ** (denorm_me * (list_denorm_max - list_denorm_min) + list_denorm_min)
     """
-
-    :param denorm_me: np.array
+    :param denorm_me: np.array - 2D shape - list of lists that contain the outputs of the model
     :param dn_dict_params_order:
     :param dict_norm_values:
     :param norm_type: '0,1' or '-1,1' or '-1, 1 max abs'
@@ -159,33 +188,42 @@ def denormalize_params(denorm_me, dn_dict_params_order=dict_params_order,
 
     list_denorm_min = []
     list_denorm_max = []
+    functions = []
+    # create functions and min max vectors
     for filter in dn_dict_params_order:
         for param in dn_dict_params_order[filter]:
             if param in ["cutoff", "center"]:
                 list_denorm_min.append(dict_norm_values["freq_min"])
                 list_denorm_max.append(dict_norm_values["freq_max"])
+                functions.append(log_denorm_param_01)
             elif param == "resonance":
                 list_denorm_min.append(dict_norm_values["resonance_min"])
                 list_denorm_max.append(dict_norm_values["resonance_max"])
+                functions.append(denorm_param_01)
             elif param == "dbgain":
                 list_denorm_min.append(dict_norm_values["dbgain_min"])
                 list_denorm_max.append(dict_norm_values["dbgain_max"])
+                functions.append(denorm_param_01)
 
     # print(f"{debugger_details()} list_denorm_min", list_denorm_min)
     # print(f"{debugger_details()} list_denorm_max", list_denorm_max)
     list_denorm_min = np.array(list_denorm_min[0:denorm_me.shape[-1]])
     list_denorm_max = np.array(list_denorm_max[0:denorm_me.shape[-1]])
-    # TODO check width of denorm_me and slice list_denorm_min and list_denorm_max accordingly
+    functions = np.array(functions[0:denorm_me.shape[-1]])
     # check which axis should be processed from denorm_me
 
     if norm_type == '0,1':
-        denorm_me = denorm_me * (list_denorm_max - list_denorm_min) + list_denorm_min
+        # denorm_me = base ** (denorm_me * (list_denorm_max - list_denorm_min) + list_denorm_min)
+        denorm_me_out = np.array([
+                            [functions[i](crt_denorm_me[i],list_denorm_max[i],list_denorm_min[i])
+                                   for i in range(len(functions))]
+                                        for crt_denorm_me in denorm_me])
         # denorm_me = denorm_me * (list_denorm_max - list_denorm_min) + list_denorm_min
     elif norm_type == '-1,1':
-        denorm_me = (denorm_me + 1) * (list_denorm_max - list_denorm_min) / 2 + list_denorm_min
+        denorm_me_out = (denorm_me + 1) * (list_denorm_max - list_denorm_min) / 2 + list_denorm_min
     elif norm_type == '-1, 1 max abs':
-        denorm_me = denorm_me * np.max(np.abs(list_denorm_max),np.abs(list_denorm_min))
-    return denorm_me
+        denorm_me_out = denorm_me * np.max(np.abs(list_denorm_max),np.abs(list_denorm_min))
+    return denorm_me_out
 def create_test_npy(path, scaler):
     """Creates x_test and y_test (true labels) from .npy files"""
     x_test, y_true = [], []
@@ -238,33 +276,6 @@ def train_model(model, train_dataset, val_dataset, batch_size, epochs, path_mode
 
     model.fit(x=train_dataset[0], y=train_dataset[1], validation_data=(val_dataset[0], val_dataset[1]),
               batch_size=batch_size, epochs=epochs, verbose=2, callbacks=get_callbacks(path_model=path_model))
-
-    # model.fit(x=train_dataset[0].astype('float32'), y=train_dataset[1].astype('float32'),
-    #           validation_data=(val_dataset[0].astype('float32'), val_dataset[1].astype('float32')),
-    #           batch_size=batch_size, epochs=epochs, verbose=2, callbacks=get_callbacks(path_model=path_model))
-    inp = tf.keras.layers.Input(shape=(28,28,1))
-    hdn= tf.keras.layers.Conv2D(64, (3,3), activation='relu')(inp)
-    hdn = tf.keras.layers.Conv2D(32, (3,3), activation='relu')(hdn)
-    hdn = tf.keras.layers.Flatten()(hdn)
-    hdn = tf.keras.layers.Dense(256, activation='relu')(hdn)
-    hdn = tf.keras.layers.Dense(128, activation='relu')(hdn)
-    hdn = tf.keras.layers.Dense(32, activation='relu')(hdn)
-    hdn = tf.keras.layers.Dense(10, activation='softmax')(hdn)
-    model = tf.keras.models.Model(inputs=inp, outputs=hdn)
-    def __init__(self):
-        self.min = None
-        self.max = None
-    def fit(self, x):  # extracts min/max from the data or whatever needed for scaling
-        if not isinstance(x,type(np.array([1,2,3]))):
-            x = np.array(x)
-        self.min = np.min(x)
-        self.max = np.max(x)
-    def transform(self,x): # scales its input to whatever min/max was extracted via fit()
-        if not isinstance(x,type(np.array([1,2,3]))):
-            x = np.array(x)
-        x = x+np.abs(self.min)
-        self.max+=+np.abs(self.min)
-        return x/self.max
 
 def IFFT(W_signal, l):
     """
@@ -367,7 +378,8 @@ def create_model(data = np.array([[[1,2,3],[1,2,3]]]), no_classes = 3, optimizer
         print(model.summary())
 
     # model.compile(optimizer=optimizer, loss=tf.keras.losses.categorical_crossentropy, metrics=['accuracy'])
-    model.compile(optimizer=optimizer, loss=tf.keras.losses.MeanSquaredError(), metrics=['mean_squared_error', 'r2_score', 'mean_absolute_error']) # MSE or MAE
+    # model.compile(optimizer=optimizer, loss=tf.keras.losses.MeanSquaredError(), metrics=['mean_squared_error', 'R2Sscore', 'mean_absolute_error']) # MSE or MAE
+    model.compile(optimizer=optimizer, loss=tf.keras.losses.MeanSquaredError(), metrics=['mean_squared_error', 'mean_absolute_error']) # MSE or MAE
     return model
 
 

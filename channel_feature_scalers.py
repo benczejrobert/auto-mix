@@ -1,14 +1,37 @@
 from utils import *
 
 class MultiDim_MaxAbsScaler(): #if not in use modify name to end with _vertical
-    #this scales everything vertically
+    """
+        This class scales every matrix vertically
+        The fit function was designed to operate on lists of matrices,
+        where the entire data is a list of matrices
+        as opposed to its Sklearn fit() counterpart that would either accept:
+        a single matrix - i.e. list of lists
+        OR a concatenated matrix.
+
+
+
+    """
     def __init__(self):
         self.max_abs_ = None
+        self.mabsscaler = MaxAbsScaler()
     def fit(self,x):  # extracts min/max from the data or whatever needed for scaling
         if not isinstance(x,type(np.array([1,2,3]))):
             x = np.array(x)
         y = np.concatenate(x,axis=0)
         self.max_abs_ = np.max(np.abs(y),axis=0)
+    def partial_fit(self,x):
+        if not isinstance(x,type(np.array([1,2,3]))):
+            x = np.array(x)
+        if len(x.shape) == 2:
+            self.mabsscaler.partial_fit(x)
+        elif len(x.shape) == 3 and x.shape[0] == 1:
+            self.mabsscaler.partial_fit(x[0])
+        else:
+            raise Exception("Please input a matrix for partial"
+                            " fit or a list of a single matrix (2-D array)."
+                            f"data shape = {x.shape}")
+        self.max_abs_ = self.mabsscaler.max_abs_
     def transform(self,x): # scales its input to whatever min/max was extracted via fit()
         if not isinstance(x,type(np.array([1,2,3]))):
             x = np.array(x)
@@ -37,10 +60,12 @@ def save_scaler_details(scaler, s_path, s_scaler_type, list_of_files,backup = Fa
     if not os.path.exists(s_path):
         os.makedirs(s_path)
 
+    # TODO make this write at every N iterations AND make the parameters write ONLY at a new max value (if not already like this)
     np.save(os.path.join(s_path,f"{s_scaler_type}_scaler_values.npy"), scaler.__getattribute__(f"{s_scaler_type}"))  # todo also add the list of files left to process AND pop the current file from the list
     np.save(os.path.join(s_path,f"{s_scaler_type}_remaining_filepaths.npy"), list_of_files)  # todo also add the list of files left to process AND pop the current file from the list
     if backup:
         print("--- save_scaler_details() creating backup files ---")
+        time.sleep(small_no)
         np.save(os.path.join(s_path,f"bkp_{s_scaler_type}_scaler_values.npy"), scaler.__getattribute__(f"{s_scaler_type}"))  # todo also add the list of files left to process AND pop the current file from the list
         np.save(os.path.join(s_path,f"bkp_{s_scaler_type}_remaining_filepaths.npy"), list_of_files)  # todo also add the list of files left to process AND pop the current file from the list
 
@@ -130,7 +155,7 @@ def tryload_features(t_filepath, t_scaler_type='max_abs_'):
     try:
         tr_npy = np.load(t_filepath,
                          allow_pickle=True)  # this contains the features and the labels. get only features
-        print("npy[0].shape = ", tr_npy[0].shape)
+        # print("npy[0].shape = ", tr_npy[0].shape)
         # tr_npy = tr_npy[0]
         # if True: # TODO implement if the scalers have not been already loaded (i.e. 1st run) OR if the scaling param is a single numbern. otherwise this will only reset the value of the scaling parameter (e.g. max_abs_)
         #     r_scaler = reevaluate_scaler_type(tr_npy, t_scaler_type)
@@ -168,7 +193,7 @@ def reevaluate_filepath_lists(rev_remaining_list_of_filepaths, rev_list_of_filep
     if rev_remaining_list_of_filepaths is not None and len(rev_remaining_list_of_filepaths) > 0:
         if isinstance(rev_remaining_list_of_filepaths, np.ndarray):
             rev_remaining_list_of_filepaths = rev_remaining_list_of_filepaths.tolist()
-        rev_list_of_filepaths = rev_remaining_list_of_filepaths # loaded remaining files from the previous run
+        rev_list_of_filepaths = rev_remaining_list_of_filepaths.copy() # loaded remaining files from the previous run
     return rev_remaining_list_of_filepaths, rev_list_of_filepaths
 def compute_scaler(data_path, with_mean=True, scaler_type='max_abs_'):
     """
@@ -197,11 +222,13 @@ def compute_scaler(data_path, with_mean=True, scaler_type='max_abs_'):
     remaining_list_of_filepaths, list_of_filepaths, scaler, max_abs = (
         check_load_scaler_params(remaining_list_of_filepaths, max_abs, scaler, scaler_type, data_path))
 
-    list_of_filepaths = list_of_filepaths
     for filepath in list_of_filepaths:
+        # TODO instead of remaining files list with remove element, rather
+        #  save last file index AND access the files by file index so
+        #  u just get the root file name + index
         print(f" --- compute_scaler() reached filepath: {filepath}. remaining files: {len(remaining_list_of_filepaths)} --- ")
         npy = tryload_features(filepath, scaler_type) # can be parallelized
-
+        # print(npy[0].shape)
         scaler.partial_fit([npy[0]]) # can be parallelized? - yes, get a max_abs_ then do a partial fit on the resulting list of max_abs_ values. make scaler shared between threads
         remaining_list_of_filepaths.remove(filepath) # requires a lock and make variable shared between threads
         # /\---TODO make this multithreaded until here---/\
@@ -211,8 +238,12 @@ def compute_scaler(data_path, with_mean=True, scaler_type='max_abs_'):
                                                        .replace("Test","scaler-params"))[0]), # create a backup at evdery 5 steps.
                             scaler_type, remaining_list_of_filepaths,
                             backup=len(remaining_list_of_filepaths) % 5 == 0) # requires a lock
-
-    save_scaler_details(scaler, os.path.join(os.path.split(filepath.replace("Train","Test").replace("Test","scaler-params"))[0]), scaler_type, remaining_list_of_filepaths)
+    try: # if list_of_filepaths is empty, filepath is not initialized, so this step should be skipped
+        save_scaler_details(scaler, os.path.join(os.path.split(filepath.replace("Train","Test").replace("Test","scaler-params"))[0]), scaler_type, remaining_list_of_filepaths)
+    except:
+        # max_abs, remaining_list_of_filepaths = load_scaler_details(
+        #     os.path.join(scaler_params_root, os.path.split(data_path)[-1]), scaler_type)
+        scaler.partial_fit([max_abs])
     return scaler
 
 
@@ -238,10 +269,11 @@ class ChannelFeatureScalers:
                 raise Exception("The length of list_with_mean and trian_data_root should be equal")
         else:
             self.list_with_mean = [True] * len(os.listdir(self.train_data_root))
-
+        # todo skip this if the crt channel is already scaled or sth
         for current_filepath, dirs, files in sorted(os.walk(self.train_data_root)):
             i = 0
             if not len(files):
+                print("CONTINUE!!!")
                 continue
             channel = os.path.split(current_filepath)[-1]
             print(f"Computing scaler for channel {channel} and path {current_filepath}")

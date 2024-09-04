@@ -1,3 +1,4 @@
+import datetime
 import os.path
 
 from utils import *
@@ -421,18 +422,18 @@ class SignalProcessor:
     ######################################>> process_signal_all_variants <<############################################
 
     #########################################>> load_data_for_training <<##############################################
-    def _normalize_value(self, x, p_min, p_max, norm_type='0,1'):
+    def _normalize_param_value(self, x, p_min, p_max, func=lambda x: x, norm_type='0,1'):
         """
-
-        :rtype: numeric or np.array
-        @BR20240415 repaired max abs p_max to np.max and changed abs to np.abs
+            :rtype: numeric or np.array
+            @BR20240415 repaired max abs p_max to np.max and changed abs to np.abs
+            @BR20240827 added func option
         """
         if norm_type == '0,1':
-            return (x - p_min) / np.abs(p_max - p_min)
-        if norm_type == '-1,1':
-            return (x - p_min) / np.abs(p_max - p_min) * 2 - 1
-        if norm_type == '-1, 1 max abs':
-            return x / np.max(np.abs([p_min, p_max]))
+            return (func(x) - func(p_min)) / np.abs(func(p_max) - func(p_min))
+        if norm_type == '-1,1': # todo to be tested with func different than y=x
+            return (func(x) - func(p_min)) / np.abs(func(p_max) - func(p_min)) * 2 - 1
+        if norm_type == '-1, 1 max abs': # todo to be tested with func different than y=x
+            return func(x) / np.max(np.abs([func(p_min), func(p_max)]))
 
     def _normalize_params(self, dict_params, normalize_type='0,1'):
         """
@@ -463,18 +464,21 @@ class SignalProcessor:
         list_out_params = []
         for filter_type in dict_params:
             # TODO checkif filter type is always in the same order
+            #   add log normer
             param_dict = eval(dict_params[filter_type][0])
             for param_name in param_dict:
                 # normalize the parameters
                 if param_name in ["cutoff", "center"]:
-                    normalized_param = self._normalize_value(param_dict[param_name], self.freq_min,
-                                                             self.freq_max, norm_type=normalize_type)
+                    normalized_param = self._normalize_param_value(param_dict[param_name], self.freq_min, self.freq_max,
+                                                                   func=np.log10, norm_type=normalize_type)
                 if param_name in ["resonance"]:
-                    normalized_param = self._normalize_value(param_dict[param_name], self.resonance_min,
-                                                             self.resonance_max, norm_type=normalize_type)
+                    normalized_param = self._normalize_param_value(param_dict[param_name], self.resonance_min,
+                                                                   self.resonance_max, func=lambda x: x,
+                                                                   norm_type=normalize_type)
                 if param_name in ["dbgain"]:
-                    normalized_param = self._normalize_value(param_dict[param_name], self.dbgain_min,
-                                                             self.dbgain_max, norm_type=normalize_type)
+                    normalized_param = self._normalize_param_value(param_dict[param_name], self.dbgain_min,
+                                                                   self.dbgain_max, func=lambda x: x,
+                                                                   norm_type=normalize_type)
 
                 # # normalize 0,1
                 # normalized_param = (param_dict[param_name] - self.dbgain_min) / (self.dbgain_max - self.dbgain_min)
@@ -490,7 +494,7 @@ class SignalProcessor:
         return list_out_params
 
     #########################################>> load_data_for_training <<##############################################
-    def process_signal_all_variants(self, in_signal_path, asv_dict_filenames_and_process_variants, normalize=True,
+    def process_signal_all_variants(self, in_signal_path, asv_dict_filenames_and_process_variants, subdict_slice = None, normalize=True,
                                     verb_start=False, verb_final=False):
         """
         This function processes the input sig with all the processings in the asv_dict_filenames_and_process_variants.
@@ -511,6 +515,8 @@ class SignalProcessor:
         @BR20240319 Added the verb_start and verb_final parameters to the function signature.
         @BR20240406 Added in_signals_root to the function signature.
         """
+        if subdict_slice is not None:
+            asv_dict_filenames_and_process_variants = dict(list(asv_dict_filenames_and_process_variants.items())[subdict_slice])
         total_no_variants = len(asv_dict_filenames_and_process_variants)
         for str_file_ending in asv_dict_filenames_and_process_variants:  # TODO parallelize this for using threads. FIRST check which parts may conflict
             str_unproc_sig_name = in_signal_path.split(os.sep)[-1].split(".")[0]
@@ -592,12 +598,12 @@ class SignalProcessor:
                             f"({len(dict_param_names_and_ranges)}) does not match "
                             f"the number_of_filters ({number_of_filters}).")
 
-    def process_multiple_signals(self,list_settings_dict, threads = False):
+    def process_multiple_signals(self,list_settings_dict, multiproc = False):
         """
         This function processes multiple signals with multiple filter settings.
         These signals can be found in the root folder of the raw signals.
         :param list_settings_dict:
-        :param threads:
+        :param multiproc:
         :return:
         """
         # iterate all the signals in the folder, self.signal will be different at every iteration
@@ -624,8 +630,7 @@ class SignalProcessor:
             self._load_signal(crt_signal_path, self.resample_to)
             no_filters = len(dict_all_filter_settings)
 
-            # TODO when multiple channels will be added, the processing will iterate through
-            #  the list of list_dict_all_filter_settings in params_preproc.py
+
             dict_filenames_and_process_variants = self.create_end_to_end_all_proc_vars_combinations(dict_all_filter_settings,
                                                                                                     root_filename="eq_ed",
                                                                                                     start_index=param_start_index,
@@ -633,7 +638,23 @@ class SignalProcessor:
                                                                                                     number_of_filters=no_filters)
             # TODO maybe add run date to the metadata or name of the processed signals
             print(f"--- Processing signal {crt_signal_path} ---")
-            self.process_signal_all_variants(crt_signal_path, dict_filenames_and_process_variants)
+            # todo this can be parallelized - get the dict splits and pass the slice of the dict to the function
+            if multiproc: # TODO untested code, could pose problems because it's single input (i.e. self.signal) and multi output
+                no_cpu = os.cpu_count()
+                subdict_slices = get_iterable_splits(dict_filenames_and_process_variants, no_cpu)
+                procs = []
+                for i in range(no_cpu):
+                    proc = mp.Process(target=self.process_signal_all_variants, args=(crt_signal_path, dict_filenames_and_process_variants, subdict_slices[i],))
+                    # self.process_signal_all_variants(crt_signal_path, dict_filenames_and_process_variants, subdict_slices[t_i])
+                    procs.append(proc)
+
+                for proc in procs:
+                    proc.start()
+                # complete the processes
+                for proc in procs:
+                    proc.join()
+            else:
+                self.process_signal_all_variants(crt_signal_path, dict_filenames_and_process_variants)
 
 
     def UNUSED_load_labels_metadata_for_training(self, training_data_folder, norm_type='0,1'):
@@ -666,12 +687,12 @@ class SignalProcessor:
 
 
     def create_features_diff_for_training_single_signal(self, processed_audio_folder, features_path,
-                                                        obj_feature_extractor, pre_diff=True,
+                                                        obj_feature_extractor, processed_audio_list = None, pre_diff=True,
                                                         process_entire_signal = True, norm_type='0,1'):
         """
             This function loads the processed signals and extracts the features from them.
             :param obj_feature_extractor: [FeatureExtractor]
-            :param processed_audio_folder: [str]
+            :param processed_audio_folder: [str] -  or [list of files]
             :param pre_diff: [bool] if True, the function will load the processed signals and subtract the signals to
                                 extract the features. Otherwise, it will make a difference between the features.
             :param process_entire_signal: [bool] does not window the input signal in librosa's 2D transformations
@@ -684,14 +705,19 @@ class SignalProcessor:
             @BR20240407 Added features_path parameter to the function signature.
             @BR20240414 Added the norm_type parameter to the function signature.
         """
-        if process_entire_signal:
+        if processed_audio_list is None:
+                processed_audio_list = sorted(os.listdir(processed_audio_folder))
+        if process_entire_signal: # TODO also make librosa window_length equal to signal
             obj_feature_extractor.features_dict["hop_length"] = len(self.signal) + 1
 
         # Reload the self.signal otherwise it can be the last signal from the preprocessing
-        crt_signal_path = f"{self.in_signals_root}{os.path.split(processed_audio_folder)[-1]}.wav"
+        crt_signal_path = os.path.join(self.in_signals_root,f"{os.path.split(processed_audio_folder)[-1]}.wav")
         self._load_signal(crt_signal_path, self.resample_to)
-        for crt_file in sorted(os.listdir(processed_audio_folder)):
-            print(f"\t--- Creating training features for: {crt_file} ---")
+        lent = len(processed_audio_list)
+        idx = 0
+        for crt_file in processed_audio_list:
+            idx+=1
+            print(f"\t--- Creating training features for: {crt_file}, {idx} of {lent} files ---")
             # load the processed signals
             if crt_file.endswith(".wav"):
                 crt_file_path = os.path.join(processed_audio_folder, crt_file)
@@ -719,7 +745,7 @@ class SignalProcessor:
                 np.save(output_file_path, (diff_features, list_normed_params))  # saves tuple of features and params
 
     def create_features_diff_for_training(self, inst_feature_extractor, bool_pre_diff=True,
-                                          bool_process_entire_signal = True):
+                                          bool_process_entire_signal = True, multiproc = False):
         if os.path.isfile(os.listdir(self.processed_signals_root_folder)[0]):
             self.create_features_diff_for_training_single_signal(self.processed_signals_root_folder,
                                                                  self.features_folder,
@@ -732,6 +758,36 @@ class SignalProcessor:
                 if os.path.isdir(procsig_crt_path):
                     if not os.path.exists(feats_crt_path):
                         os.mkdir(feats_crt_path)
-                    self.create_features_diff_for_training_single_signal(procsig_crt_path,feats_crt_path,
-                                                                         inst_feature_extractor,
-                                                                         bool_pre_diff, bool_process_entire_signal)
+                    list_of_files = os.listdir(procsig_crt_path) # TODO parallelize this code with multiprocessing
+
+                    # TODO multiproc not possible because member functions can not be pickled
+                    if multiproc:
+                        no_cpu = os.cpu_count()
+                        list_slices = get_iterable_splits(list_of_files,no_cpu)
+                        procs = []
+                        for i in range(no_cpu):
+                            proc = mp.Process(target=self.create_features_diff_for_training_single_signal,
+                                              args = (procsig_crt_path,
+                                                      feats_crt_path,
+                                                      inst_feature_extractor,
+                                                      list_of_files[list_slices[i]],
+                                                      bool_pre_diff,
+                                                      bool_process_entire_signal,)
+                                              )
+                            procs.append(proc)
+                        time_start = datetime.datetime.now()
+                        for proc in procs:
+                            proc.start()
+                        # complete the processes
+                        for proc in procs:
+                            proc.join()
+                        print(f"--- Parallel {__name__} lasted {datetime.datetime.now() - time_start}")
+                    else:
+                        time_start = datetime.datetime.now()
+                        self.create_features_diff_for_training_single_signal(procsig_crt_path,
+                                                                             feats_crt_path,
+                                                                             inst_feature_extractor,
+                                                                             list_of_files,
+                                                                             bool_pre_diff,
+                                                                             bool_process_entire_signal)
+                        print(f"--- Sequential {__name__} lasted {datetime.datetime.now() - time_start}")

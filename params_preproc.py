@@ -66,20 +66,20 @@ general_ls_freq = range(150, 301, 60)
 general_q_interval = [0.5, 1]
 general_gain_interval = [-9, -5, 0, 5, 9]  # checkif any gains lower than -12 in reaper (and if not too much data will be created)
 
-kick_hp_freq = list(range(30, 101, 15))
-kick_hp_freq.extend(range(150, 251, 50))
+kick_hp_freq = list(range(30, 101, 50)) # changed to 50 from 15
+kick_hp_freq.extend(range(150, 251, 80)) # changed to 80 from 50
 
-kick_p1_freq = list(range(50, 351, 50))
+kick_p1_freq = list(range(50, 351, 110)) # changed to 110 from 50
 
-kick_p2_freq = list(range(400, 801,100))
+kick_p2_freq = list(range(400, 801,200)) # changed to 200 from 100
 
 ### snr-specific params
 
-snr_hp_freq = list(range(100, 341, 60))
+snr_hp_freq = list(range(100, 341, 90)) # from 60 to 90
 
-snr_p1_freq = list(range(400, 801,100))
+snr_p1_freq = list(range(400, 801,200)) # from 100 to 200
 
-snr_p2_freq = list(range(4000, 9300,900))
+snr_p2_freq = list(range(4000, 9300,1700)) # from 900 to 1700
 
 # elements will correspond to the sorted() files in the raw-audio folder
 list_dict_all_filter_settings = [

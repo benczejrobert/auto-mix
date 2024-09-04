@@ -41,8 +41,6 @@ class FeatureExtractor:  # TODO testme @20240318 - updated interface.
             exec(function, None, dic)
             reference = list(dic.values())[0]
             feature_name = self.__get_feature_name(feature_function_file_name.split('.')[0])
-            # print("feature_name = ", feature_name)
-            # print("reference = ", reference)
             setattr(self, feature_name, reference)
 
 

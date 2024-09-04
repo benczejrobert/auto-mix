@@ -34,6 +34,9 @@ def k_fold_cross_validation(path, k, path_model_input, batch_size,
             x_train, x_val, y_train, y_val = k_fold(current_folderpath, k, i + 1)
             x_train = scaler.transform(x_train)
             x_val = scaler.transform(x_val)
+            if np.max(x_val) > 1.1 or np.min(x_val) < -1.1 or np.max(x_train) > 1.1 or np.min(x_train) < -1.1:
+                raise Exception("Transformed data has been scaled incorrectly")
+
             if shuffle_mode:    # shuffle data samples from train and val together and then separate them again
                 train_length = x_train.shape[0]
                 x_data = np.concatenate((x_train, x_val), axis=0)

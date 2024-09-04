@@ -2,6 +2,8 @@ from params_preproc import *
 from utils import *
 def run_predict(path_test, inst_feature_scalers, # save_results, respath,
             latest_model = True):
+    # features are scaled max-abs
+    # BUT labels are scaled min-max
     for current_folderpath, dirs, files in os.walk(path_test):
         if not len(files):
             continue
@@ -18,18 +20,16 @@ def run_predict(path_test, inst_feature_scalers, # save_results, respath,
             # TODO implement a functionality that allows loading model for a specific date if it exists
         model = tf.keras.models.load_model(path_model)
         model.summary()
-        # window_length, overlap, non_windowed_db all None, remove them
+
         x_test, y_true = create_test_npy(os.path.join(path_test, channel_folder), scaler)
         y_pred = model.predict(x_test)
-        # print('MAX',(np.max(y_pred - y_true)))
-        # print('flatten',(y_pred - y_true).flatten())
+
         y_pred_denor = denormalize_params(y_pred)
-        # print(f"y_pred_denor {debugger_details()}  = ")
         y_true_denor = denormalize_params(y_true)
 
         # TODO de umblat la float precision ca se incaleca xticks
-        # TODO verif de ce apar 22 figuri in loc de 11
-        hist_errors(y_pred_denor, y_true_denor, dict_params_order, model_name)
+        list_errors(y_pred_denor, y_true_denor, dict_params_order, channel_folder+" "+model_name)
+        # TODO make abs diff between y_pred_denor and y_true and divide it by y_true
 
 
         #TODO update hist errors with the following ideas/packages:
