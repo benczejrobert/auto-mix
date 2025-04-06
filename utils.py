@@ -3,6 +3,11 @@ from imports import *
 from params_preproc import *
 
 # from logger import *
+def join(a,b):
+    """
+        get common values from 2 lists
+    """
+    return list(set(a) & set(b))
 
 def get_iterable_splits(in_iterable, no_splits):
     list_dict_splits = []
